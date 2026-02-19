@@ -20,15 +20,17 @@ fi
 ssh -D $SOCKS_PORT localhost -N -f
 
 # 3. Create the Reverse Tunnel and log in
-echo "🔗 Tunneling through $SERVER_ADDRESS..."
+echo "🔗 Tunneling through $SERVER_ADDRESS..." # like the messasges touch 😊
 
 ssh -R ${REMOTE_PORT}:localhost:${SOCKS_PORT} ${USER}@${SERVER_ADDRESS} -t \
     "export HTTP_PROXY='socks5h://localhost:${REMOTE_PORT}'; \
      export HTTPS_PROXY='socks5h://localhost:${REMOTE_PORT}'; \
      echo '✅ Proxy Mask Active (socks5h)'; \
-     bash --login;
-     cd dev/insta_news/etl/tests && source .venv/bin/activate && python3 insta_scraper_concept.py;
+     cd dev/insta_news/etl/tests && source .venv/bin/activate && python3 insta_scraper_concept.py; \
      exit;"
+     # bash --login;" # for manual mode / testing
+
+     
 
 # 4. Cleanup
 echo "--- 🛑 Closing Tunnels ---"
