@@ -12,6 +12,12 @@ fi
 # --- Namespace/Setup (The std::filesystem equivalent) ---
 DEST_FILE="$CONFIG_PATH/droplet_config.txt"
 
+# view the existing file contents and exit 
+if [[ "$#" -gt 0 && "$1" == "-v" ]]; then
+    cat "$DEST_FILE"
+    exit 0
+fi
+
 # Ensure the directory exists (The fs::create_directories equivalent)
 if [[ ! -d "$CONFIG_PATH" ]]; then
     mkdir -p "$CONFIG_PATH"
