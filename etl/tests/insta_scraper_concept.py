@@ -51,7 +51,7 @@ try:
         # This is where we will eventually look for keywords like "Pizza" or "BBQ"
         # summarised_cap = get_event_summary(post.caption)
         #print(f"Caption: {summarised_cap}") 
-        print(f"Caption: NO SUMMARY YET @ SUMMARISER") # @SUMMARISER TO REMOVE
+        print(f"Caption: NO SUMMARY YET @ SUMMARISER") # NOTE: REMOVE 
 
         print(f"Link: https://www.instagram.com/p/{post.shortcode}/")
 
