@@ -4,7 +4,9 @@
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
     CONFIG_DIR="$APPDATA/insta_news"
 else
-    CONFIG_DIR="$HOME/.config/insta_news"
+    # CONFIG_DIR="$HOME/.config/insta_news" # doesn't work with mac shortcuts
+    REAL_USER=$(stat -f "%Su" /dev/console)
+    CONFIG_DIR="/Users/$REAL_USER/.config/insta_news"
 fi
 
 # Ensure the directory exists

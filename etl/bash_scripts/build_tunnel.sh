@@ -2,11 +2,16 @@
 
 # could also call it dig tunnel heh heh
 
-# cleanup function - runs at early exit (ctrl + c etc)
-trap "lsof -ti :$SOCKS_PORT | xargs kill -9 2>/dev/null" EXIT
+# debugging
+# set -x
 
-# source config file
+# source config file (contains all the set variables)
 source "$(dirname "$0")/env_handler.sh"
+
+# cleanup function - runs at early exit (ctrl + c etc)
+# Single quotes prevent early expansion.
+trap 'lsof -ti :$SOCKS_PORT | xargs kill -9 2>/dev/null' EXIT
+
 
 echo "--- 🛡️ Starting Secure Mask Session ---"
 
@@ -26,7 +31,7 @@ ssh -R ${REMOTE_PORT}:localhost:${SOCKS_PORT} ${USER}@${SERVER_ADDRESS} -t \
     "export HTTP_PROXY='socks5h://localhost:${REMOTE_PORT}'; \
      export HTTPS_PROXY='socks5h://localhost:${REMOTE_PORT}'; \
      echo '✅ Proxy Mask Active (socks5h)'; \
-     cd dev/insta_news/etl/tests && source .venv/bin/activate && python3 insta_scraper_concept.py; \
+     cd dev/insta_news/etl/tests && source .venv/bin/activate && python3 insta_scraper_json.py; \
      exit;"
      # bash --login;" # for manual mode / testing
 
@@ -35,3 +40,20 @@ ssh -R ${REMOTE_PORT}:localhost:${SOCKS_PORT} ${USER}@${SERVER_ADDRESS} -t \
 # 4. Cleanup
 echo "--- 🛑 Closing Tunnels ---"
 lsof -ti :$SOCKS_PORT | xargs kill -9 2>/dev/null
+
+# Undo the pmset repeat (for testing).
+# conditional: does this tool exist 
+if command -v pmset >/dev/null 2>&1; then
+    #echo "--- 💻 Removing pmset scheduled wake event(s) ---"
+    # Remove all scheduled wake or power events - requires password so foget it
+    # sudo pmset repeat cancel
+
+    # Optionally, show any remaining scheduled events
+    pmset -g sched
+
+    echo "--- 😴 Putting Mac back to sleep ---"
+    # WARNING undo 
+    # pmset sleepnow # more concise 
+    # Below mimics user clicking sleep (APPLESCRIPT)
+    #osascript -e 'tell application "System Events" to sleep'
+fi
