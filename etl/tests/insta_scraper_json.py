@@ -53,11 +53,11 @@ try:
             "link": f"https://www.instagram.com/p/{post.shortcode}/",
         }
 
-        with open('output.jsonl', 'a') as file:
-            json.dump(data, file)
-            f.write('\n')  # formatting
+        with open('output.jsonl', 'a') as f:
+            json.dump(data, f)
+            f.write('\n')  # newline formatting 
 
-
+        print(f"Processed Post on {post.date_local}")
 
         # 6. CRITICAL: The "Human" Pause
         # Even for a test, sleep to avoid an immediate 429 Error/Soft Ban on your IP
