@@ -32,6 +32,7 @@ load_dotenv()
 username = os.getenv("insta_username") # replace with your username 
 session_path = os.path.expanduser(f"~/.config/instaloader/session-{username}")
 
+
 try:
     with open(session_path, 'rb') as f:
         L.load_session_from_file(username, f)
