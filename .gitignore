@@ -5,3 +5,4 @@ etl/bash_scripts/cursor_experiments/
 
 # this is one for my personal reference which includes my droplet host name
 etl/bash_scripts/port_setup.sh
+.env
