@@ -58,6 +58,9 @@ try:
     
     with open('output.jsonl', 'a') as f:
         f.write('\n\n\n')  # break between tests 
+        f.write(f"{datetime.now()}: beginning TEST")
+
+
 
     for post in posts:
         date_t = post.date
