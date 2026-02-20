@@ -34,8 +34,8 @@ session_path = os.path.expanduser(f"~/.config/instaloader/session-{username}")
 
 
 try:
-    with open(session_path, 'rb') as f:
-        L.load_session_from_file(username, f)
+
+    L.load_session_from_file(username, session_path)
     print("Authentication successful via session file.")
 except FileNotFoundError:
     print(f"Error: Session file not found at {session_path}")

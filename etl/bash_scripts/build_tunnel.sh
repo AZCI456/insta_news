@@ -27,7 +27,8 @@ ssh -D $SOCKS_PORT localhost -N -f
 # 3. Create the Reverse Tunnel and log in
 echo "🔗 Tunneling through $SERVER_ADDRESS..." # like the messasges touch 😊
 
-ssh -R ${REMOTE_PORT}:localhost:${SOCKS_PORT} ${USER}@${SERVER_ADDRESS} -t \
+# ~/.ssh/id_ed25519 for the key fetch on automated system
+ssh -i ~/.ssh/id_ed25519 -R ${REMOTE_PORT}:localhost:${SOCKS_PORT} ${USER}@${SERVER_ADDRESS} -t \
     "export HTTP_PROXY='socks5h://localhost:${REMOTE_PORT}'; \
      export HTTPS_PROXY='socks5h://localhost:${REMOTE_PORT}'; \
      echo '✅ Proxy Mask Active (socks5h)'; \
