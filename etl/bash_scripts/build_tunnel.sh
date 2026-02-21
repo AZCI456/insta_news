@@ -35,3 +35,20 @@ ssh -R ${REMOTE_PORT}:localhost:${SOCKS_PORT} ${USER}@${SERVER_ADDRESS} -t \
 # 4. Cleanup
 echo "--- 🛑 Closing Tunnels ---"
 lsof -ti :$SOCKS_PORT | xargs kill -9 2>/dev/null
+
+# Undo the pmset repeat (for testing).
+# conditional: does this tool exist 
+if command -v pmset >/dev/null 2>&1; then
+    #echo "--- 💻 Removing pmset scheduled wake event(s) ---"
+    # Remove all scheduled wake or power events - requires password so foget it
+    # sudo pmset repeat cancel
+
+    # Optionally, show any remaining scheduled events
+    pmset -g sched
+
+    echo "--- 😴 Putting Mac back to sleep ---"
+    # WARNING undo 
+    pmset sleepnow # more concise 
+    # Below mimics user clicking sleep (APPLESCRIPT)
+    #osascript -e 'tell application "System Events" to sleep'
+fi
