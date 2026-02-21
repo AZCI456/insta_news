@@ -54,7 +54,7 @@ if command -v pmset >/dev/null 2>&1; then
 
     echo "--- 😴 Putting Mac back to sleep ---"
     # WARNING undo 
-    # pmset sleepnow # more concise 
+    pmset sleepnow # more concise 
     # Below mimics user clicking sleep (APPLESCRIPT)
     #osascript -e 'tell application "System Events" to sleep'
 fi
