@@ -29,8 +29,9 @@ L = instaloader.Instaloader(
 # Load environment variables from .env file
 load_dotenv()
 
-username = os.getenv("insta_username") # replace with your username 
-session_path = os.path.expanduser(f"~/.config/instaloader/session-{username}")
+username = os.getenv("insta_username") # replace with your username  in .env (this is so that insta doesn't find my accounts and ban it)
+# on personal will have to sudo chmod 700 all the parent directories as well as give 600 to the config file
+session_path = os.path.expanduser(f"/opt/insta_news_data/config/instaloader/session-{username}")
 
 
 try:
