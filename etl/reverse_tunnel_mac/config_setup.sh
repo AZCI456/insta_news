@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# maybe default my IP - makes changing easier less typing
+
 # --- Platform-specific Path Definition (The #ifdef equivalent) ---
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
     # Windows (using APPDATA environment variable)
@@ -11,6 +13,7 @@ fi
 
 # --- Namespace/Setup (The std::filesystem equivalent) ---
 DEST_FILE="$CONFIG_PATH/droplet_config.txt"
+
 
 # view the existing file contents and exit 
 if [[ "$#" -gt 0 && "$1" == "-v" ]]; then
@@ -53,3 +56,25 @@ while true; do
         echo "Invalid format. Please enter a valid IPv4."
     fi
 done
+
+
+# Set default ports (reference: build_tunnel.sh)
+SOCKS_PORT=1080
+REMOTE_PORT=8080
+# Allow override or entry of SOCKS_PORT and REMOTE_PORT
+read -p "Enter SOCKS proxy local port [default: $SOCKS_PORT]: " input_socks_port
+if [[ ! -z "$input_socks_port" ]]; then
+    SOCKS_PORT="$input_socks_port"
+fi
+
+read -p "Enter REMOTE tunnel port [default: $REMOTE_PORT]: " input_remote_port
+if [[ ! -z "$input_remote_port" ]]; then
+    REMOTE_PORT="$input_remote_port"
+fi
+
+echo "SOCKS_PORT=$SOCKS_PORT" >> "$DEST_FILE"
+echo "REMOTE_PORT=$REMOTE_PORT" >> "$DEST_FILE"
+
+echo "Final config saved to $DEST_FILE:"
+echo "-----------------------"
+cat "$DEST_FILE"

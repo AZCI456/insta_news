@@ -32,7 +32,7 @@ ssh -i ~/.ssh/id_ed25519 -R ${REMOTE_PORT}:localhost:${SOCKS_PORT} ${USER}@${SER
     "export HTTP_PROXY='socks5h://localhost:${REMOTE_PORT}'; \
      export HTTPS_PROXY='socks5h://localhost:${REMOTE_PORT}'; \
      echo '✅ Proxy Mask Active (socks5h)'; \
-     cd dev/insta_news/etl/tests && source .venv/bin/activate && python3 insta_scraper_json.py; \
+     cd /opt/insta_news/etl/tests && source .venv/bin/activate && python3 insta_scraper_json.py; \
      exit;"
      # bash --login;" # for manual mode / testing
 
