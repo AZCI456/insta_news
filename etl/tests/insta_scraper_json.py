@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 import json
 
-from gemini_summariser import get_event_summary
+#from python files
 import sqlite3
 
 

@@ -15,7 +15,7 @@ apt-get install python3-pip -y
 #    - instaloader: The scraping logic
 #    - pysocks: REQUIRED for SOCKS5 proxy support (fixes "Missing dependencies" error)
 #    - requests: For general HTTP calls
-pip3 install instaloader pysocks requests dotenv google-genai sqlite3
+pip3 install instaloader pysocks requests dotenv google-genai
 
 # --- RE-ENABLE PROXY FOR SCRAPING ---
 # Now that tools are installed, turn the tunnel back on.
