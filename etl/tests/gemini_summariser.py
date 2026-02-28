@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import os
 
 # 1. Setup API Key - replace before release

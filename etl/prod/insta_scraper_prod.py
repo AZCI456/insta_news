@@ -49,8 +49,8 @@ def scrape_profile(
     target_username: str,
     max_posts: int,
     last_checked_date: datetime,
-    output_path: str
-   # con: sqlite3.Connection  # all passed in through reference so stays alive
+    output_path: str,
+    con: sqlite3.Connection # all passed in through reference so stays alive
 ):
     print(f"--- Attempting to scrape {target_username} ---")
 
@@ -96,7 +96,7 @@ def main():
     last_checked_date = datetime.fromisoformat("2026-01-29")
     output_path = "output.jsonl"
 
-    # con = sqlite3.connect("/opt/insta_news_data/")
+    con = sqlite3.connect("/opt/insta_news_data/")
 
     try:
         scrape_profile(
@@ -104,7 +104,8 @@ def main():
             target_username=target_username,
             max_posts=MAX_POSTS_PER_SESSION,
             last_checked_date=last_checked_date,
-            output_path=output_path
+            output_path=output_path,
+            con
         )
     except instaloader.ConnectionException as e:
         print(f"\n[!] Connection Error: {e}")
@@ -119,3 +120,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
