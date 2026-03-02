@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS clubs (
     name TEXT,
     email TEXT,
     username VARCHAR PRIMARY KEY,
+    insta_url TEXT,
+    umsu_url TEXT,
     last_scraped_at DATETIME DEFAULT NULL
     -- isactive implicit from associative entity
 );

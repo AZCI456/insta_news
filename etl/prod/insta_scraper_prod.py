@@ -7,8 +7,9 @@ import os
 from dotenv import load_dotenv
 import json
 
-from gemini_summariser import get_event_summary
+#from python files
 import sqlite3
+
 
 
 MAX_POSTS_PER_SESSION = 10
@@ -50,7 +51,7 @@ def scrape_profile(
     max_posts: int,
     last_checked_date: datetime,
     output_path: str,
-    con: sqlite3.Connection # all passed in through reference so stays alive
+    con: sqlite3.Connection  # all passed in through reference so stays alive
 ):
     print(f"--- Attempting to scrape {target_username} ---")
 
@@ -96,7 +97,8 @@ def main():
     last_checked_date = datetime.fromisoformat("2026-01-29")
     output_path = "output.jsonl"
 
-    con = sqlite3.connect("/opt/insta_news_data/")
+
+    con = sqlite3.connect("/opt/insta_news_data/sqlite3/insta_news.sqlite3")
 
     try:
         scrape_profile(
@@ -105,7 +107,7 @@ def main():
             max_posts=MAX_POSTS_PER_SESSION,
             last_checked_date=last_checked_date,
             output_path=output_path,
-            con
+            con=con
         )
     except instaloader.ConnectionException as e:
         print(f"\n[!] Connection Error: {e}")
@@ -120,4 +122,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
