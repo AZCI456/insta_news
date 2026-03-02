@@ -6,7 +6,7 @@ import random # for a more human scroll time (immitation not robotic 5s each tim
 
 
 # from dev made files 
-from gemini_summariser import get_event_summary 
+# from gemini_summariser import get_event_summary 
 
 MAX_POSTS_PER_SESSION = 10
 

@@ -1,10 +1,12 @@
 -- Schema for insta_news SQLite database
 
 -- 1. Clubs table (account metadata)
+-- TODO: surrogate key some clubs don't have a username 
 CREATE TABLE IF NOT EXISTS clubs (
+    club_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     email TEXT,
-    username VARCHAR PRIMARY KEY,
+    username VARCHAR UNIQUE, -- can be null for some clubs (in the db so we can tell the user your club doesn't have insta)
     insta_url TEXT,
     umsu_url TEXT,
     last_scraped_at DATETIME DEFAULT NULL
@@ -15,18 +17,20 @@ CREATE TABLE IF NOT EXISTS clubs (
 -- No ON DELETE CASCADE so reimports/updates won't cascade deletions.
 CREATE TABLE IF NOT EXISTS posts (
     post_id TEXT PRIMARY KEY,
-    username TEXT,
+    club_id TEXT, -- from the loop of subscribed to clubs (join table with users)
     caption TEXT,
     timestamp DATETIME,
     -- GEM fields (uncomment when ready to use)
     -- food_summary JSON,
     -- process_status TEXT DEFAULT 'pending',
-    FOREIGN KEY (username) REFERENCES clubs(username)
+    FOREIGN KEY (club_id) REFERENCES clubs(club_id)
 );
 
 -- 3. Food events table (dependent on posts)
+-- TODO: add slide_id to the primary key (so we can have slides of captions per post - unlikely but possible)
+-- NOTE: MAYBE NOT ACTUALLY - just loop through and concatenate the captions into one big string - then feed to gemini
 CREATE TABLE IF NOT EXISTS food_events (
-    post_id TEXT PRIMARY KEY,              -- or (post_id, event_idx) if multi
+    post_id TEXT PRIMARY KEY,   -- globally unique on insta
     has_food BOOLEAN NOT NULL,
     event_date DATE,
     start_time TIME,
@@ -51,7 +55,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     user_id INTEGER,
     club_id TEXT,
     PRIMARY KEY (user_id, club_id),
-    FOREIGN KEY (club_id) REFERENCES clubs(username),
+    FOREIGN KEY (club_id) REFERENCES clubs(club_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id)
     -- NOTE: no ON DELETE CASCADE on purpose
 );
