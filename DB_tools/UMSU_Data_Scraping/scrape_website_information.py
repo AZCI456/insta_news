@@ -4,6 +4,14 @@ from urllib.parse import urljoin
 
 BASE_URL = "https://umsu.unimelb.edu.au/"
 
+import os
+import sqlite3
+from dotenv import load_dotenv
+from tqdm import tqdm
+
+load_dotenv()
+
+DB_PATH = os.getenv("insta_news_db_path")
 
 def extract_club_data(url: str) -> dict | None:
     response = requests.get(url)
@@ -41,7 +49,7 @@ def collect_all_club_links(base_url: str = BASE_URL) -> list[str]:
     links = []
     # select the unordered list of clubs (this is the tag in their html)
     # note that the list item has a data-msl-grouping-id attribute which is the club's id
-    for li in soup.select("ul.msl_organisation_list li[data-msl-grouping-id]"):
+    for li in tqdm(soup.select("ul.msl_organisation_list li[data-msl-grouping-id]"), desc="Extracting club links"):
         # select the anchor tag within the list item
         a = li.select_one("a.msl-gl-link")
         if a and a.get("href"):
@@ -56,13 +64,34 @@ def collect_all_club_links(base_url: str = BASE_URL) -> list[str]:
     # eg (club_id, keyword_id) -> Club and Keyword entity table
 
 
+def insert_club_data(club_data: dict) -> None:
+    # get the file from the current directory and read it into memory
+    sql_path = os.path.join(os.path.dirname(__file__), "upsert_club.sql")
+    with open(sql_path, "r") as f:
+        upsert_sql = f.read()
+
+    # add to db updated values or insert new if not exists (SOOOO MUCH EASIER THAN DUCK DB!!!!!!)
+    with sqlite3.connect(DB_PATH) as con:
+        cursor = con.cursor()
+        cursor.execute(
+            upsert_sql,
+            {
+                "name": club_data["name"],
+                "email": club_data["email"],
+                "username": club_data["username"],
+                "insta_url": club_data["insta_url"],
+                "umsu_url": club_data["umsu_url"],
+            },
+        )
+        con.commit()
+
 def main():
     club_links = collect_all_club_links()
     #print(club_links)
-    for link in club_links:
+    for link in tqdm(club_links, desc="Extracting and Loading club data to DB...", total=len(club_links)):
         club_data = extract_club_data(link)
-        print(club_data)
-        break
+        if club_data:
+            insert_club_data(club_data)
 
 if __name__ == "__main__":
     main()

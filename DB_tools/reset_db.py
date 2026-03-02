@@ -2,11 +2,11 @@ import os
 import sqlite3
 from pathlib import Path
 
+from dotenv import load_dotenv
 
-# TODO: Set this to the full path of your SQLite database file.
-# Example: DB_PATH = "/opt/insta_news_data/db/insta_news.sqlite"
-DB_PATH = "/opt/insta_news_data/sqlite3/insta_news.sqlite" 
+load_dotenv()
 
+DB_PATH = os.getenv("insta_news_db_path")
 
 def load_schema(connection: sqlite3.Connection) -> None:
     """
