@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS clubs (
     email TEXT, -- free on the scraper they all have emails
     -- can do website as well but not useful info for me as v static most of the time + 90% don't have
     username VARCHAR PRIMARY KEY,
+    insta_url TEXT,
+    umsu_url TEXT,
     last_scraped_at DATETIME DEFAULT NULL
     -- isactive implicit from associative entity
 );
