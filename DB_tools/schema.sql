@@ -9,14 +9,14 @@ CREATE TABLE IF NOT EXISTS clubs (
     username VARCHAR UNIQUE, -- can be null for some clubs (in the db so we can tell the user your club doesn't have insta)
     insta_url TEXT,
     umsu_url TEXT,
-    last_scraped_at DATETIME DEFAULT NULL
+    last_scraped_at DATETIME DEFAULT NULL -- beats last scraped post id as post's can be deleted (loops through EVERYTHING)
     -- isactive implicit from associative entity
 );
 
 -- 2. Posts table
 -- No ON DELETE CASCADE so reimports/updates won't cascade deletions.
 CREATE TABLE IF NOT EXISTS posts (
-    post_id TEXT PRIMARY KEY,
+    post_id TEXT PRIMARY KEY,  -- globally unique on insta
     club_id TEXT, -- from the loop of subscribed to clubs (join table with users)
     caption TEXT,
     timestamp DATETIME,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS posts (
 -- TODO: add slide_id to the primary key (so we can have slides of captions per post - unlikely but possible)
 -- NOTE: MAYBE NOT ACTUALLY - just loop through and concatenate the captions into one big string - then feed to gemini
 CREATE TABLE IF NOT EXISTS food_events (
-    post_id TEXT PRIMARY KEY,   -- globally unique on insta
+    post_id TEXT PRIMARY KEY,  -- what to do if multiple posts link to the same food event?
     has_food BOOLEAN NOT NULL,
     event_date DATE,
     start_time TIME,

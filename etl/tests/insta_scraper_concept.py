@@ -4,6 +4,7 @@ from itertools import islice
 from datetime import datetime
 import random # for a more human scroll time (immitation not robotic 5s each time)
 
+import sys
 
 # from dev made files 
 # from gemini_summariser import get_event_summary 
@@ -20,9 +21,11 @@ L = instaloader.Instaloader(
     download_comments=False
 )
 
-# 2. Define your target (Public Account)
-# Try: 'cissa_unimelb', 'unimelb_misc', 'unimelbcpc', 'umsuactivities'
-target_username = 'umsuactivities' 
+# 2. Get target username from command line argument (optional)
+if len(sys.argv) > 1:
+    target_username = sys.argv[1]
+else:
+    target_username = 'umsuactivities'
 
 print(f"--- Attempting to scrape {target_username} anonymously ---")
 
@@ -51,7 +54,7 @@ try:
         # This is where we will eventually look for keywords like "Pizza" or "BBQ"
         # summarised_cap = get_event_summary(post.caption)
         #print(f"Caption: {summarised_cap}") 
-        print(f"Caption: NO SUMMARY YET @ SUMMARISER") # @SUMMARISER TO REMOVE
+        print(f"Caption: {post.caption}") # @SUMMARISER TO REMOVE
 
         print(f"Link: https://www.instagram.com/p/{post.shortcode}/")
 
