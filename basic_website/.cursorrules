@@ -1,0 +1,1 @@
+"Always prioritize SQLite with WAL mode. Use FastAPI for the backend. Use Tailwind CSS for the frontend. Keep the code in a single-file structure where possible for simplicity. Do not suggest external database services like Supabase unless explicitly asked."

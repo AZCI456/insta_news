@@ -56,5 +56,12 @@ def reset_database(db_path: str) -> None:
 
 
 if __name__ == "__main__":
+    # safety net 
+    print(f"Are you sure you want to proceed with resetting the database? (y/n)")
+    answer = input()
+    if answer != "y":
+        print("Exiting...")
+        exit()
+
     reset_database(DB_PATH)
 

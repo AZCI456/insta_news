@@ -11,7 +11,8 @@ import json
 import sqlite3
 
 
-
+# TODO: make this a variable in the env file
+# Don't make it max posts make it last week for the initial run  
 MAX_POSTS_PER_SESSION = 10
 
 

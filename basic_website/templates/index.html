@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniMelb Club Oracle</title>
+
+    <!-- Tailwind via CDN so you don't have to write much CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/theme.css" />
+
+    <style>
+      /* Overall page: dark, minimal, trustworthy */
+      body {
+        min-height: 100vh;
+        background-color: #020617; /* slate-950 */
+        color: #e5e7eb; /* slate-200 */
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      /* Subtle repeating star-like speckle, not flashy */
+      .star-bg {
+        background-image: radial-gradient(circle, #ffffff33 1px, transparent 1px);
+        background-size: 40px 40px;
+      }
+
+      /* Simple retro card */
+      .retro-card {
+        border: 1px solid var(--accent-color, #22c55e);
+        box-shadow:
+          0 0 0 1px rgba(15, 23, 42, 1),
+          0 0 25px rgba(34, 197, 94, 0.15);
+        background: rgba(15, 23, 42, 0.96);
+      }
+
+      .retro-heading {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+      }
+    </style>
+  </head>
+
+  <body class="star-bg">
+    <div
+      class="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-8 sm:py-10 md:py-12"
+    >
+      <!-- Header: simple, retro-ish, no animation, looks serious -->
+      <header class="mb-6 sm:mb-8 text-center">
+        <h1
+          class="retro-heading text-sm sm:text-base text-emerald-400/90 mb-2 tracking-[0.25em]"
+        >
+          unimelb club oracle
+        </h1>
+        <p class="text-lg sm:text-xl md:text-2xl font-semibold text-slate-100">
+          Free food and club events, filtered for you.
+        </p>
+        <p class="mt-2 text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
+          Drop your student email once, pick your clubs later. We send a
+          short, no‑nonsense digest when something actually interesting is on.
+        </p>
+      </header>
+
+      <!-- SECTION 1: Email capture -->
+      <section class="mb-8">
+        <div class="retro-card rounded-2xl px-4 py-4 sm:px-6 sm:py-6">
+          <h2 class="text-sm sm:text-base font-semibold text-emerald-300">
+            1. Lock in your student email
+          </h2>
+          <p class="mt-1 text-[11px] sm:text-xs text-slate-400">
+            Use a UniMelb address if you can. This is what we&rsquo;ll use to
+            send magic links to manage your clubs. No passwords, no spam.
+          </p>
+
+          <!--
+            You wire this up in FastAPI.
+            For example, POST to /signup with JSON { email, club_ids }.
+          -->
+          <form class="mt-4 space-y-3" id="email-form">
+            <label class="block text-left text-[11px] font-medium text-slate-200">
+              Student email
+              <input
+                type="email"
+                name="email"
+                id="email"
+                required
+                placeholder="student@unimelb.edu.au"
+                class="mt-1 w-full rounded-md border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+              />
+            </label>
+
+            <p class="text-[11px] text-slate-500">
+              After this, you&rsquo;ll choose which clubs you care about.
+            </p>
+
+            <div class="pt-1">
+              <button
+                type="submit"
+                class="inline-flex w-full items-center justify-center rounded-md border border-emerald-400 bg-emerald-500/90 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-950"
+              >
+                Continue
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- SECTION 2: Today's food events (you'll populate this from SQL) -->
+      <section class="mb-4 flex-1">
+        <div class="mb-3 text-left">
+          <h2 class="text-sm sm:text-base font-semibold text-emerald-300">
+            2. Today&rsquo;s food events
+          </h2>
+          <p class="mt-1 text-[11px] sm:text-xs text-slate-400">
+            This section will be filled from your
+            <code class="font-mono text-emerald-300">food_events</code> table
+            (e.g. <code class="font-mono">event_date = DATE('now')</code>).
+          </p>
+        </div>
+
+        <div
+          class="retro-card rounded-2xl overflow-hidden border border-emerald-500/60"
+        >
+          <div class="max-h-[360px] overflow-auto">
+            <table class="min-w-full text-left text-xs sm:text-sm">
+              <thead class="bg-slate-900 text-[11px] uppercase tracking-wide">
+                <tr>
+                  <th class="px-3 sm:px-4 py-2 text-slate-300">Time</th>
+                  <th class="px-3 sm:px-4 py-2 text-slate-300">Club / Host</th>
+                  <th class="px-3 sm:px-4 py-2 text-slate-300">Food</th>
+                  <th class="hidden sm:table-cell px-3 sm:px-4 py-2 text-slate-300">
+                    Location
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800 bg-slate-950/80">
+                <!-- Example static rows; replace with your Jinja loop later -->
+                <tr>
+                  <td class="px-3 sm:px-4 py-2 align-top text-emerald-300">
+                    12:00&nbsp;&ndash;&nbsp;2:00
+                  </td>
+                  <td class="px-3 sm:px-4 py-2 align-top">
+                    <div class="font-medium text-slate-100">
+                      Engineering Music Society
+                    </div>
+                    <div class="text-[11px] text-slate-400">BBQ on South Lawn</div>
+                  </td>
+                  <td class="px-3 sm:px-4 py-2 align-top">
+                    Sausage sizzle (veg options)
+                  </td>
+                  <td class="hidden sm:table-cell px-3 sm:px-4 py-2 align-top">
+                    South Lawn
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-3 sm:px-4 py-2 align-top text-emerald-300">
+                    6:00&nbsp;&ndash;&nbsp;8:00
+                  </td>
+                  <td class="px-3 sm:px-4 py-2 align-top">
+                    <div class="font-medium text-slate-100">
+                      International Students Collective
+                    </div>
+                    <div class="text-[11px] text-slate-400">Dumpling Night</div>
+                  </td>
+                  <td class="px-3 sm:px-4 py-2 align-top">
+                    Dumplings + tea
+                  </td>
+                  <td class="hidden sm:table-cell px-3 sm:px-4 py-2 align-top">
+                    Union House, Level 2
+                  </td>
+                </tr>
+                <!-- Add more examples or just leave two; real data will replace them -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <footer class="mt-4 text-[10px] sm:text-xs text-slate-500 text-center">
+        Built as a student project. Your email is stored hashed + encrypted in the
+        database; magic links only.
+      </footer>
+    </div>
+  </body>
+</html>
