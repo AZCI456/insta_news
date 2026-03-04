@@ -146,14 +146,20 @@ async def signup(email: str = Form(...)) -> RedirectResponse:
     normalized_email = email.strip().lower()
     print(f"[DEBUG] Received signup email: {normalized_email}")
 
+    # Flash a message to the user that an email has been "sent" (placeholder).
+    # FastAPI doesn't have built-in "flash messages" like Flask, so here's an easy teaching workaround:
+    # We'll set a special query string (e.g. ?sent=1) on redirect, and then add logic in your index.html
+    # template to display a confirmation message if "sent" is present in the URL.
+    #
+    # After you wire this up in your template, users will see "Confirmation email sent!" after submitting.
+
+    return RedirectResponse(url="/?sent=1", status_code=303)
+
     # TODO:
     # 1) Compute email_hash and encrypted_email
     # 2) Upsert into the users table
     # 3) Generate or reuse manage_token
     # 4) Send magic-link email
-
-    # For now, just redirect the user back to the home page.
-    return RedirectResponse(url="/", status_code=303)
 
 # -----------------------------------------------------------------------------
 # 7. Manage page (GET) – skeleton for magic-link page

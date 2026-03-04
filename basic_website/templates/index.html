@@ -47,6 +47,15 @@
     <div
       class="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-8 sm:py-10 md:py-12"
     >
+      {% if request.query_params.get("sent") == "1" %}
+      <!-- Simple confirmation banner shown after /signup redirect with ?sent=1 -->
+      <div
+        class="mb-4 rounded-md border border-yellow-400/80 bg-yellow-500/10 px-3 py-2 text-[11px] sm:text-xs text-yellow-200 font-semibold shadow-md"
+      >
+        <!-- class="mb-4 rounded-md border border-emerald-400/70 bg-emerald-500/10 px-3 py-2 text-[11px] sm:text-xs text-emerald-200" -->
+        Check your inbox for a link to choose your clubs.
+      </div>
+      {% endif %}
       <!-- Header: simple, retro-ish, no animation, looks serious -->
       <header class="mb-6 sm:mb-8 text-center">
         <h1
@@ -78,7 +87,7 @@
             You wire this up in FastAPI.
             For example, POST to /signup with JSON { email, club_ids }.
           -->
-          <form class="mt-4 space-y-3" id="email-form">
+          <form class="mt-4 space-y-3" id="email-form" method="post" action="/signup">
             <label class="block text-left text-[11px] font-medium text-slate-200">
               Student email
               <input
