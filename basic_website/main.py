@@ -153,13 +153,27 @@ async def signup(email: str = Form(...)) -> RedirectResponse:
     #
     # After you wire this up in your template, users will see "Confirmation email sent!" after submitting.
 
-    return RedirectResponse(url="/?sent=1", status_code=303)
 
     # TODO:
     # 1) Compute email_hash and encrypted_email
+
+    #TODO: add salt to make it more secure (add a random string to the email before hashing)
+    email_hash = hashlib.sha256(normalized_email.encode()).hexdigest() # built in hash function - still susseptible to randow table attacks - would need some salt and pepper to make it more secure
+    encrypted_email = encrypt_email(normalized_email)
+
+    manage_token = generate_manage_token()
+    
     # 2) Upsert into the users table
-    # 3) Generate or reuse manage_token
+    conn = get_connection()
+    conn.execute("INSERT INTO users (email_hash, encrypted_email, manage_token) VALUES (?, ?, ?)", (email_hash, encrypted_email, manage_token))
+    conn.commit()
+    conn.close()
+
     # 4) Send magic-link email
+    send_magic_link_email(normalized_email, manage_token)
+
+    return RedirectResponse(url="/?sent=1", status_code=303)
+
 
 # -----------------------------------------------------------------------------
 # 7. Manage page (GET) – skeleton for magic-link page
