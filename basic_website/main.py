@@ -20,6 +20,8 @@ from fastapi.staticfiles import StaticFiles
 import os
 import sqlite3
 from pathlib import Path
+import hashlib
+from email_utilites import encrypt_email, generate_manage_token, send_magic_link_email
 
 from dotenv import load_dotenv
 
@@ -157,12 +159,14 @@ async def signup(email: str = Form(...)) -> RedirectResponse:
     # TODO:
     # 1) Compute email_hash and encrypted_email
 
-    #TODO: add salt to make it more secure (add a random string to the email before hashing)
-    email_hash = hashlib.sha256(normalized_email.encode()).hexdigest() # built in hash function - still susseptible to randow table attacks - would need some salt and pepper to make it more secure
+    # TODO: add pepper (or salt - maybe better for this use case) in .env to make it more secure (add a random string to the email before hashing)
+    # BIG ISSUE: losing it breaks lookups - how to make system robust to this? (still susceptible to randow table attacks)
+    # For now unimelb limits the email search lookup of students per student - good enough for now to keep safe
+    email_hash = hashlib.sha256(normalized_email.encode()).hexdigest() 
     encrypted_email = encrypt_email(normalized_email)
 
     manage_token = generate_manage_token()
-    
+
     # 2) Upsert into the users table
     conn = get_connection()
     conn.execute("INSERT INTO users (email_hash, encrypted_email, manage_token) VALUES (?, ?, ?)", (email_hash, encrypted_email, manage_token))

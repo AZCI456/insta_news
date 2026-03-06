@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS users (
     email_hash TEXT UNIQUE NOT NULL,      -- SHA256 hex
     encrypted_email TEXT NOT NULL,        -- AES-encrypted, decryptable
     manage_token TEXT UNIQUE NOT NULL,    -- UUID v4 ("magic link" token)
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    verified BOOLEAN DEFAULT FALSE -- via magic link verification email
 );
 
 -- 5. Subscriptions (join table: users ↔ clubs)
