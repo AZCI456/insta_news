@@ -21,7 +21,11 @@ import os
 import sqlite3
 from pathlib import Path
 import hashlib
-from email_utilites import encrypt_email, generate_manage_token, send_magic_link_email
+from email_system.email_utilites import (
+    encrypt_email,
+    generate_manage_token,
+    send_magic_link_email,
+)
 
 from dotenv import load_dotenv
 
@@ -169,8 +173,10 @@ async def signup(email: str = Form(...)) -> RedirectResponse:
 
     # 2) Upsert into the users table
     conn = get_connection()
-    conn.execute("INSERT INTO users (email_hash, encrypted_email, manage_token) VALUES (?, ?, ?)", (email_hash, encrypted_email, manage_token))
+    conn.execute("INSERT OR IGNORE INTO users (email_hash, encrypted_email, manage_token) VALUES (?, ?, ?)", (email_hash, encrypted_email, manage_token))
     conn.commit()
+    # get the manage token for the user - in the case that they're already in the db - hash collision
+    manage_token = conn.execute("SELECT manage_token FROM users WHERE email_hash = ?", (email_hash,)).fetchone()[0]
     conn.close()
 
     # 4) Send magic-link email

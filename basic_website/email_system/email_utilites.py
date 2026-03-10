@@ -11,6 +11,15 @@ import os
 import uuid  # This module is part of the Python standard library, so you do NOT need to install it.
 from cryptography.fernet import Fernet  # You DO need to install the 'cryptography' package.
 
+# In Python, importing between files in the same directory is a bit tricky.
+# - If you run this script directly, `from email_smtp_config import send_email` works (bare import from same dir).
+# - But if it's run as a module (e.g. as part of a larger app), you should use a *relative import*.
+
+# To reliably import from a sibling file ("email_smtp_config.py") inside the same package (directory),
+#   use a "relative import" - this only works if this folder has an __init__.py file!
+# So create an __init__.py (can be empty) in email_system/.
+# Then, use a relative import:
+from email_system.email_smtp_config import send_email
 
 
 def encrypt_email(email: str) -> str:
@@ -51,4 +60,4 @@ def send_magic_link_email(email: str, token: str) -> None:
     Returns:
     - None
     """
-    pass
+    send_email(email, "Magic Link", f"Click the link to manage your account: {os.getenv('FRONTEND_URL')}/manage?token={token}")
