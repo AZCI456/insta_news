@@ -21,6 +21,15 @@ import os
 import sqlite3
 from pathlib import Path
 import hashlib
+# FastAPI, like many modern frameworks, uses Python's typing system
+# to make APIs safer and more predictable.
+# 
+# Here, we import `List` from the `typing` module to specify that certain function
+# parameters or variables can hold a list of items (e.g., a list of integers such as List[int]).
+# This is especially important for routes that can receive multiple values (like when
+# a user checks multiple checkboxes in a form submission), so FastAPI knows to
+# parse those inputs as Python lists and provide useful editor/type hints.
+from typing import List
 from email_system.email_utilites import (
     encrypt_email,
     generate_manage_token,
@@ -200,16 +209,120 @@ async def manage(request: Request, token: str) -> HTMLResponse:
         * Load their current club subscriptions
         * Render a page that lets them tick/untick clubs and save
 
-    For now it just shows a tiny debug page so you can confirm the flow.
+    For now this loads clubs + the user’s current subscriptions
+    (if the token is valid) and renders a management page.
     """
     # TODO later: validate token, load user + clubs + subscriptions
+
+    # 1) Look up user by manage_token.
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_id FROM users WHERE manage_token = ?;",
+        (token,),
+    )
+    row = cur.fetchone()
+
+    if row is None:
+        # Invalid or expired token: show a simple error page that links back home.
+        conn.close()
+        return templates.TemplateResponse(
+            "manage_invalid.html",
+            {
+                "request": request,
+            },
+        )
+
+    user_id = row["user_id"]
+
+    # 2) Load all clubs.
+    cur.execute("SELECT club_id, name FROM clubs ORDER BY name COLLATE NOCASE;")
+    clubs = cur.fetchall()
+
+    # 3) Load this user's current subscriptions (club_ids).
+    cur.execute(
+        "SELECT club_id FROM subscriptions WHERE user_id = ?;",
+        (user_id,),
+    )
+    selected_rows = cur.fetchall()
+    # NOTE:
+    #    make the Jinja check `if club["club_id"] in selected_club_ids`
+    selected_club_ids = {r["club_id"] for r in selected_rows}
+
+    conn.close()
+
     return templates.TemplateResponse(
-        "manage.html",  # you'll create this later
+        "manage.html",
         {
             "request": request,
             "token": token,
+            "clubs": clubs,
+            "selected_club_ids": selected_club_ids,
         },
     )
+
+
+@app.post("/manage")
+async def update_manage(
+    request: Request,
+    token: str,  # comes from the query string: /manage?token=...
+    club_id: List[int] = Form([]),
+) -> RedirectResponse:
+    """
+    Handle the form submission from manage.html when the user clicks
+    "Save my club list".
+
+    IMPORTANT pieces:
+    - `token: str` is the same magic link token as in the GET route, but here
+      FastAPI reads it from the query string on the POST request.
+    - `club_id: List[int] = Form([])`:
+        * In the HTML, each checkbox is named "club_id".
+        * When several checkboxes are ticked, the browser sends a list of
+          values for "club_id".
+        * FastAPI collects those into a Python list of ints.
+    """
+    # 1) Look up the user associated with this manage_token.
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_id FROM users WHERE manage_token = ?;",
+        (token,),
+    )
+    row = cur.fetchone()
+
+    if row is None:
+        # Token is invalid or expired: close the connection and send the user
+        # to the same "invalid" page used by the GET handler.
+        conn.close()
+        return RedirectResponse(url="/manage?token=invalid", status_code=303)
+
+    user_id = row["user_id"]
+
+    # 2) Normalize the incoming list of club_ids.
+    #    If the user unticks everything, club_id will be an empty list.
+    selected_ids: List[int] = [int(cid) for cid in club_id]
+
+    # 3) Replace this user's subscriptions in a single transaction:
+    #    - DELETE all existing rows for this user_id
+    #    - INSERT new rows for each selected club_id
+    cur.execute(
+        "DELETE FROM subscriptions WHERE user_id = ?;",
+        (user_id,),
+    )
+
+    # Only insert if there is at least one selected club to avoid an empty executemany().
+    if selected_ids:
+        cur.executemany(
+            "INSERT INTO subscriptions (user_id, club_id) VALUES (?, ?);",
+            [(user_id, cid) for cid in selected_ids],
+        )
+
+    conn.commit()
+    conn.close()
+
+    # 4) Redirect back to the manage page so the user sees their updated list.
+    #    We add ?saved=1 so the template can show a small "updated" banner.
+    return RedirectResponse(url=f"/manage?token={token}&saved=1", status_code=303)
 
 # -----------------------------------------------------------------------------
 # 8. Local development entry point (optional)

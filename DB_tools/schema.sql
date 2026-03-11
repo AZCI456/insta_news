@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- 5. Subscriptions (join table: users ↔ clubs)
 CREATE TABLE IF NOT EXISTS subscriptions (
     user_id INTEGER,
-    club_id TEXT,
+    club_id INTEGER,
     PRIMARY KEY (user_id, club_id),
     FOREIGN KEY (club_id) REFERENCES clubs(club_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id)
