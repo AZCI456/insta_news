@@ -114,13 +114,24 @@
         <div
           class="rounded-2xl border border-slate-700/70 bg-slate-900/90 px-4 py-4 sm:px-5 sm:py-5"
         >
-          <h2 class="text-sm font-semibold text-slate-100 mb-2">
-            Currently selected
-          </h2>
-          <p class="text-[11px] text-slate-400 mb-2">
-            This list updates as you tick/untick clubs. It&rsquo;s just a
-            visual helper so you don&rsquo;t lose track.
-          </p>
+          <div class="flex items-center justify-between mb-2 gap-3">
+            <div>
+              <h2 class="text-sm font-semibold text-slate-100">
+                Currently selected
+              </h2>
+              <p class="text-[11px] text-slate-400">
+                Updates as you tick/untick clubs.
+              </p>
+            </div>
+            <button
+              type="button"
+              id="deselect-all"
+              class="rounded-md border border-slate-600 bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-100 hover:bg-slate-700"
+            >
+              Deselect all
+            </button>
+          </div>
+
           <ul id="selected-clubs" class="space-y-1 text-xs text-slate-200"></ul>
         </div>
       </section>
@@ -167,6 +178,20 @@
 
       searchInput.addEventListener("input", filterClubs);
       clubsList.addEventListener("change", rebuildSelectedList);
+
+      // Deselect-all button: clears all checkboxes and updates the summary list.
+      const deselectBtn = document.getElementById("deselect-all");
+      if (deselectBtn) {
+        deselectBtn.addEventListener("click", () => {
+          const checked = clubsList.querySelectorAll(
+            'input[name="club_id"]:checked'
+          );
+          checked.forEach((input) => {
+            input.checked = false;
+          });
+          rebuildSelectedList();
+        });
+      }
 
       // Initial build on page load
       rebuildSelectedList();

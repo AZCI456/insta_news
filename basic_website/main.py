@@ -159,25 +159,17 @@ async def signup(email: str = Form(...)) -> RedirectResponse:
     `email: str = Form(...)` tells FastAPI to read an HTML form field called "email".
     """
     normalized_email = email.strip().lower()
-    print(f"[DEBUG] Received signup email: {normalized_email}")
-
-    # Flash a message to the user that an email has been "sent" (placeholder).
-    # FastAPI doesn't have built-in "flash messages" like Flask, so here's an easy teaching workaround:
-    # We'll set a special query string (e.g. ?sent=1) on redirect, and then add logic in your index.html
-    # template to display a confirmation message if "sent" is present in the URL.
-    #
-    # After you wire this up in your template, users will see "Confirmation email sent!" after submitting.
+    # print(f"[DEBUG] Received signup email: {normalized_email}")
 
 
-    # TODO:
     # 1) Compute email_hash and encrypted_email
-
     # TODO: add pepper (or salt - maybe better for this use case) in .env to make it more secure (add a random string to the email before hashing)
     # BIG ISSUE: losing it breaks lookups - how to make system robust to this? (still susceptible to randow table attacks)
     # For now unimelb limits the email search lookup of students per student - good enough for now to keep safe
     email_hash = hashlib.sha256(normalized_email.encode()).hexdigest() 
     encrypted_email = encrypt_email(normalized_email)
 
+    # generate uuidv4
     manage_token = generate_manage_token()
 
     # 2) Upsert into the users table
@@ -191,6 +183,7 @@ async def signup(email: str = Form(...)) -> RedirectResponse:
     # 4) Send magic-link email
     send_magic_link_email(normalized_email, manage_token)
 
+    # 5) Redirect to the manage page (static message shows )
     return RedirectResponse(url="/?sent=1", status_code=303)
 
 
