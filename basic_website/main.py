@@ -228,8 +228,22 @@ async def manage(request: Request, token: str) -> HTMLResponse:
 
     user_id = row["user_id"]
 
-    # 2) Load all clubs.
-    cur.execute("SELECT club_id, name FROM clubs ORDER BY name COLLATE NOCASE;")
+    # 2) Load all clubs, along with their associated keywords.
+    #    We use LEFT JOINs so clubs without any keywords still appear.
+    #    GROUP_CONCAT returns a comma-separated string of keywords per club.
+    cur.execute(
+        """
+        SELECT
+            c.club_id,
+            c.name,
+            IFNULL(GROUP_CONCAT(k.keyword, ','), '') AS keywords
+        FROM clubs AS c
+        LEFT JOIN club_keywords AS ck ON ck.club_id = c.club_id
+        LEFT JOIN keywords AS k ON k.keyword_id = ck.keyword_id
+        GROUP BY c.club_id, c.name
+        ORDER BY c.name COLLATE NOCASE;
+        """
+    )
     clubs = cur.fetchall()
 
     # 3) Load this user's current subscriptions (club_ids).
@@ -238,9 +252,9 @@ async def manage(request: Request, token: str) -> HTMLResponse:
         (user_id,),
     )
     selected_rows = cur.fetchall()
-    # NOTE:
-    #    make the Jinja check `if club["club_id"] in selected_club_ids`
-    selected_club_ids = {r["club_id"] for r in selected_rows}
+    # Normalise subscription club_ids to integers so the Jinja check
+    # `if club["club_id"] in selected_club_ids` works correctly.
+    selected_club_ids = {int(r["club_id"]) for r in selected_rows}
 
     conn.close()
 

@@ -66,9 +66,9 @@
               />
             </div>
             <p class="text-[11px] text-slate-400">
-              Start typing to filter. Tick as many clubs as you like, then hit
-              Save. This first version reloads the page on save; we can make it
-              fancier later.
+              Start typing to filter. Tick as many clubs as you like, and make sure to hit
+              SAVE so we don't lose your preferences. You can also try keywords such as 'engineering', 'social', 'tech' etc.<br><br>
+              NOTE: some shortforms are not yet supported ('MUMS', 'PSS') try a keyword for now we're working on it!
             </p>
 
             <div
@@ -79,6 +79,7 @@
               <label
                 class="flex items-start gap-2 rounded-lg border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-xs hover:border-emerald-400/80 hover:bg-slate-900/80 cursor-pointer"
                 data-name="{{ club['name'] | lower }}"
+                data-keywords="{{ club['keywords'] | default('') | lower }}"
               >
                 <input
                   type="checkbox"
@@ -171,7 +172,9 @@
         const labels = clubsList.querySelectorAll("label[data-name]");
         labels.forEach((label) => {
           const name = label.getAttribute("data-name") || "";
-          const matches = name.includes(query);
+          const keywords = label.getAttribute("data-keywords") || "";
+          const haystack = `${name} ${keywords}`;
+          const matches = haystack.includes(query);
           label.style.display = matches ? "" : "none";
         });
       }
