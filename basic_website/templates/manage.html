@@ -44,9 +44,12 @@
       </section>
 
       <section class="grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <!-- Left: searchable list of all clubs with checkboxes -->
+        <!-- Left on desktop / second on mobile: searchable list of all clubs with checkboxes.
+             Teaching note: the order-2 md:order-1 classes mean "show this card after the
+             summary card on small screens, but place it in the left column on medium+
+             screens". This is a Tailwind CSS layout helper for responsive ordering. -->
         <div
-          class="rounded-2xl border border-emerald-500/60 bg-slate-900/90 px-4 py-4 sm:px-5 sm:py-5"
+          class="order-2 md:order-1 rounded-2xl border border-emerald-500/60 bg-slate-900/90 px-4 py-4 sm:px-5 sm:py-5"
         >
           <form
             id="clubs-form"
@@ -67,7 +70,8 @@
             </div>
             <p class="text-[11px] text-slate-400">
               Start typing to filter. Tick as many clubs as you like, and make sure to hit
-              SAVE so we don't lose your preferences. You can also try keywords such as 'engineering', 'social', 'tech' etc.<br><br>
+              SAVE so we don't lose your preferences (save even if deselecting). 
+              You can also use keywords to search e.g. 'engineering', 'social', 'tech' etc.<br><br>
               NOTE: some shortforms are not yet supported ('MUMS', 'PSS') try a keyword for now we're working on it!
             </p>
 
@@ -111,9 +115,12 @@
           </form>
         </div>
 
-        <!-- Right: summary of currently selected clubs (purely visual; JS updates it later) -->
+        <!-- Right on desktop / first on mobile: summary of currently selected clubs.
+             Teaching note: order-1 md:order-2 flips the visual stacking so this summary
+             appears at the top on phones (where vertical scrolling dominates) while still
+             living in the right-hand column on larger screens. -->
         <div
-          class="rounded-2xl border border-slate-700/70 bg-slate-900/90 px-4 py-4 sm:px-5 sm:py-5"
+          class="order-1 md:order-2 rounded-2xl border border-slate-700/70 bg-slate-900/90 px-4 py-4 sm:px-5 sm:py-5"
         >
           <div class="flex items-center justify-between mb-2 gap-3">
             <div>
