@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS clubs (
     insta_url TEXT,
     umsu_url TEXT,
     umsu_grouping_id int,
-    last_scraped_at DATETIME DEFAULT NULL -- beats last scraped post id as post's can be deleted (loops through EVERYTHING)
+    last_scraped_at DATETIME DEFAULT NULL -- when you first insert a club, Python will set this to "9 days ago" so the scraper treats it as due for an immediate scrape
     -- isactive implicit from associative entity
 );
 

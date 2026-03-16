@@ -79,7 +79,6 @@ def insert_club_data(club_data: dict) -> None:
         # Note this is a SQL file that contains the SQL code to insert the club data into the database (python stores as a string)
         upsert_sql = f.read()
 
-    # add to db updated values or insert new if not exists (SOOOO MUCH EASIER THAN DUCK DB!!!!!!)
     with sqlite3.connect(DB_PATH) as con:
         cursor = con.cursor()
         cursor.execute(

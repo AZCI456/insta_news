@@ -30,6 +30,7 @@ import hashlib
 # a user checks multiple checkboxes in a form submission), so FastAPI knows to
 # parse those inputs as Python lists and provide useful editor/type hints.
 from typing import List
+from datetime import datetime, timedelta, timezone  
 from email_system.email_utilites import (
     encrypt_email,
     generate_manage_token,
@@ -252,9 +253,9 @@ async def manage(request: Request, token: str) -> HTMLResponse:
         (user_id,),
     )
     selected_rows = cur.fetchall()
-    # Normalise subscription club_ids to integers so the Jinja check
-    # `if club["club_id"] in selected_club_ids` works correctly.
-    selected_club_ids = {int(r["club_id"]) for r in selected_rows}
+    # NOTE:
+    #    make the Jinja check `if club["club_id"] in selected_club_ids`
+    selected_club_ids = {r["club_id"] for r in selected_rows}
 
     conn.close()
 
@@ -309,7 +310,16 @@ async def update_manage(
     #    If the user unticks everything, club_id will be an empty list.
     selected_ids: List[int] = [int(cid) for cid in club_id]
 
-    # 3) Replace this user's subscriptions in a single transaction:
+    # 3) We want to know which clubs this user was previously subscribed to so we can
+    #    detect *newly* added clubs on this save.
+    cur.execute(
+        "SELECT club_id FROM subscriptions WHERE user_id = ?;",
+        (user_id,),
+    )
+    previous_rows = cur.fetchall()
+    previous_ids = {r["club_id"] for r in previous_rows}
+
+    # 4) Replace this user's subscriptions in a single transaction:
     #    - DELETE all existing rows for this user_id
     #    - INSERT new rows for each selected club_id
     cur.execute(
@@ -324,8 +334,27 @@ async def update_manage(
             [(user_id, cid) for cid in selected_ids],
         )
 
+    # 5) Activate scraping only for clubs that now have at least one subscriber
+    #    and have never been scraped before (last_scraped IS NULL).
+    #    We set last_scraped to "9 days ago" (in UTC) so your scraper logic treats them as due.
+    nine_days_ago_iso = (datetime.now(timezone.utc) - timedelta(days=9)).isoformat(timespec="seconds")
+    cur.execute(
+        """
+        UPDATE clubs
+        SET last_scraped_at = ?
+        WHERE last_scraped_at IS NULL           -- brilliant sql v clean
+          AND club_id IN (
+              SELECT DISTINCT club_id FROM subscriptions
+          );
+        """,
+        (nine_days_ago_iso,),
+    )
+
     conn.commit()
     conn.close()
+
+    # TODO: implement this as a optimisation for when not being used (first need subscribers lol)
+    #       handle the case where the club now has no subscribers - set last_scraped to NULL (see SQL folder)
 
     # 4) Redirect back to the manage page so the user sees their updated list.
     #    We add ?saved=1 so the template can show a small "updated" banner.
