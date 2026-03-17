@@ -25,11 +25,11 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-import dotenv
 
-dotenv.load_dotenv()
-
-# DATA_ROOT_ENV_VAR = os.getenv("insta_news_data_root")
+# teaching comment:
+# We intentionally do NOT call `load_dotenv()` in this utility.
+# The scraper (entrypoint) is responsible for loading `.env` once at startup.
+# That keeps this module dependency-free and safe to import in more contexts.
 
 
 def _as_path(value: str) -> Path:
@@ -69,6 +69,8 @@ def ensure_dir(path: Path) -> Path:
     return path
 
 
+# This makes InstaNewsPaths into an immutable data container, auto-creating init and equality methods.
+# Setting frozen=True prevents accidental mutation and allows use as a dictionary key.
 @dataclass(frozen=True)
 class InstaNewsPaths:
     """

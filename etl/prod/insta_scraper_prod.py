@@ -9,6 +9,8 @@ import json
 
 #from python files
 import sqlite3
+import data_paths  # local module in this folder: creates/returns standard data directories + file paths
+from gemini_summariser import gemini_summariser  # production Gemini summariser (writes derived summary JSON)
 
 load_dotenv()
 
@@ -48,6 +50,7 @@ def load_session(loader: instaloader.Instaloader, username: str, session_path: s
 
 def scrape_profile(
     loader: instaloader.Instaloader,
+    club_id: int,
     target_username: str,
     last_checked_date: datetime,
    # output_path: str, # TODO: make this a variable in the env file
@@ -59,9 +62,12 @@ def scrape_profile(
     profile = instaloader.Profile.from_username(loader.context, target_username)
     posts =  profile.get_posts() # islice(profile.get_posts(), max_posts)
 
-    with open(output_path, "a") as f:
-        f.write("\n\n\n")
-        f.write(f"{datetime.now()}: beginning RUN")
+    # teaching comment: this helper reads `insta_news_data_root` from `.env` and gives us
+    # consistent folders for raw JSONL + derived summaries (creating missing dirs safely).
+    paths = data_paths.get_paths()
+
+    # keeps each run grouped together on disk.
+    run_date_yyyy_mm_dd = datetime.now().date().isoformat()
 
     for post in posts:
         date_t = post.date
@@ -75,7 +81,14 @@ def scrape_profile(
         # caption_summary = get_event_summary(post.caption)
         caption = post.caption
 
+        # raw JSONL path for this club and this run date
+        raw_jsonl_path = paths.raw_posts_jsonl_path(club_id=club_id, date_yyyy_mm_dd=run_date_yyyy_mm_dd)
+        data_paths.ensure_dir(raw_jsonl_path.parent)
+
         data = {
+            "club_id": club_id,
+            "username": target_username,
+            "post_id": post.shortcode,
             "date_local": post.date_local.isoformat(),
             "time_metadata_utc": post.date.isoformat(),
             "likes": post.likes,
@@ -83,7 +96,8 @@ def scrape_profile(
             "link": f"https://www.instagram.com/p/{post.shortcode}/",
         }
 
-        with open(output_path, "a") as f:
+        # append a single JSON object per line (JSONL)
+        with open(raw_jsonl_path, "a") as f:
             json.dump(data, f)
             f.write("\n")
 
@@ -105,7 +119,9 @@ def main():
     con = sqlite3.connect(DB_PATH)
 
     # get all the clubs that have been approved for scraping 
-    targets = con.execute("SELECT username, last_scraped_at FROM clubs WHERE last_scraped_at IS NOT NULL").fetchall()
+    targets = con.execute(
+        "SELECT club_id, username, last_scraped_at FROM clubs WHERE last_scraped_at IS NOT NULL"
+    ).fetchall()
 
     #print(f"Targets: {targets}");
     #exit()
@@ -116,19 +132,25 @@ def main():
     try:
         for target in targets:
             if len(batch_process_list) >= BATCH_PROCESS_THREASHHOLD:
-                gemini_summariser(batch_process_list)
+                gemini_summariser(batch_process_list, batch_size=BATCH_PROCESS_THREASHHOLD)
+                batch_process_list.clear()  # teaching comment: prevent resending the same items in the next batch
 
-            target_username = target[0]
-            last_checked_date = target[1]
+            club_id = target[0]
+            target_username = target[1]
+            # teaching comment: SQLite stores datetimes as TEXT; convert ISO string -> datetime for comparisons.
+            last_checked_date = datetime.fromisoformat(target[2])
             scrape_profile(
                 loader=loader,
-                target_username=target[0],
-                last_checked_date=target[1],
+                club_id=club_id,
+                target_username=target_username,
+                last_checked_date=last_checked_date,
                 batch_list = batch_process_list,
                 con=con
             )
         
-        if (len(batch_process_list)): gemini_summariser(batch_process_list)
+        if len(batch_process_list):
+            gemini_summariser(batch_process_list, batch_size=BATCH_PROCESS_THREASHHOLD)
+            batch_process_list.clear()
 
     except instaloader.ConnectionException as e:
         print(f"\n[!] Connection Error: {e}")

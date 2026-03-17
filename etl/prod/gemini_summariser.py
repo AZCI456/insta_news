@@ -1,0 +1,240 @@
+"""
+etl/prod/gemini_summariser.py
+
+Production Gemini summariser for scraped Instagram posts.
+based on original testing file but with additions in the form of 
+best practice (and new data types + paths tie in)
+
+Design goals
+------------
+1) Keep the input/output contract simple:
+   - Input: a list of post dicts (from the scraper batch_list)
+   - Output: a list of summary records (one per club_id)
+
+2) Be safe for production:
+   - Batch the request so we don't underutilise context windows.
+   - Never lose raw data (raw JSONL is written by the scraper already).
+   - Persist derived summaries to disk under `insta_news_data_root/derived/...`.
+
+3) Be easy to iterate on:
+   - All prompt/model config lives in one place.
+   - The file name format makes it easy to re-run and compare versions.
+"""
+
+
+
+from __future__ import annotations
+
+import json
+import os
+from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, Iterable, List
+
+import data_paths
+from prompts.system_prompts import SYSTEM_PROMPTS
+
+from google import genai
+from google.genai import types
+
+
+
+# -----------------------------------------------------------------------------
+# 1) Configuration
+# -----------------------------------------------------------------------------
+
+DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+DEFAULT_PROMPT_NAME = os.getenv("GEMINI_SYSTEM_PROMPT", "concise")
+
+def _get_system_prompt(name: str) -> str:
+    """
+    Resolve a system prompt by name from `prompts/system_prompts.py`.
+
+    Teaching note:
+    - This lets you quickly try different prompt variants without touching the summariser logic.
+    - If you typo the name, we fall back to "concise" instead of crashing mid-run.
+    """
+    return (SYSTEM_PROMPTS.get(name) or SYSTEM_PROMPTS["concise"]).strip()
+
+
+def _get_client():
+    """
+    Create a Gemini client using `genai_api_key` from the environment.
+
+    Teaching note:
+    - We keep secrets out of code and rely on `.env` + environment variables.
+    - If this key is missing, we fail fast with a clear error.
+    """
+
+    api_key = os.getenv("genai_api_key")
+    if not api_key:
+        raise RuntimeError("Missing env var `genai_api_key` (Gemini API key).")
+    return genai.Client(api_key=api_key)
+
+
+def _chunks(items: List[Dict[str, Any]], size: int) -> Iterable[List[Dict[str, Any]]]:
+    """
+    Yield successive chunks from a list.
+
+    Teaching note:
+    - Chunking lets us control request size (context + cost).
+    - We chunk the *posts* list; the raw file layout stays per run/day.
+    """
+    for i in range(0, len(items), size):
+        yield items[i : i + size]
+
+
+def _infer_window(posts: List[Dict[str, Any]]) -> Dict[str, str]:
+    """
+    Infer a time window from the posts we are summarising.
+
+    We use the `time_metadata_utc` field if present; otherwise fall back to
+    `date_local`.
+    """
+    timestamps: List[str] = []
+    for p in posts:
+        ts = p.get("time_metadata_utc") or p.get("date_local")
+        if ts:
+            timestamps.append(ts)
+
+    if not timestamps:
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        return {"start": now, "end": now}
+
+    # ISO8601 strings sort lexicographically if they are consistently formatted.
+    timestamps.sort()
+    return {"start": timestamps[0], "end": timestamps[-1]}
+
+
+# -----------------------------------------------------------------------------
+# 2) Public API used by the scraper
+# -----------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class SummaryRecord:
+    club_id: int
+    run_date: str
+    window: Dict[str, str]
+    payload: Dict[str, Any]
+    output_path: Path
+
+
+def gemini_summariser(
+    posts_batch: List[Dict[str, Any]],
+    *,
+    batch_size: int = 50,
+    model: str = DEFAULT_MODEL,
+) -> List[SummaryRecord]:
+    """
+    Summarise a mixed batch of post dicts coming from the scraper.
+
+    Expected post dict shape (minimum):
+      {
+        "club_id": int,
+        "post_id": str,
+        "caption": str,
+        "date_local": str,
+        "time_metadata_utc": str,
+        "link": str
+      }
+
+    Behavior:
+    - Groups posts by club_id (you want one summary per club, not a cross-club soup).
+    - For each club, chunks posts into <= batch_size and summarises each chunk.
+    - Writes each summary JSON to:
+        derived/summaries/club_id=<ID>/date=<RUN_DATE>/summary_<N>.json
+    """
+    if not posts_batch:
+        return []
+
+
+    client = _get_client()
+    paths = data_paths.get_paths()
+    system_prompt = _get_system_prompt(DEFAULT_PROMPT_NAME)
+
+    # teaching comment: group by club_id so each Gemini request only sees one club at a time.
+    by_club: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
+    for post in posts_batch:
+        club_id = post.get("club_id")
+        if club_id is None:
+            # If club_id is missing, we can't route it to the right folder.
+            # Skip rather than corrupting output.
+            continue
+        by_club[int(club_id)].append(post)
+
+    run_date = datetime.now().date().isoformat()
+    results: List[SummaryRecord] = []
+
+    for club_id, club_posts in by_club.items():
+        # Keep newest->oldest stable ordering if your scraper appended in that order.
+        # If ordering matters later, you can sort by time_metadata_utc here.
+        for idx, chunk in enumerate(_chunks(club_posts, batch_size), start=1):
+            window = _infer_window(chunk)
+
+            # Teaching note: we only send the fields the model needs.
+            model_input = {
+                "club_id": club_id,
+                "posts": [
+                    {
+                        "post_id": p.get("post_id"),
+                        "timestamp": p.get("time_metadata_utc") or p.get("date_local"),
+                        "caption": p.get("caption") or "",
+                        "link": p.get("link"),
+                    }
+                    for p in chunk
+                ],
+            }
+
+            response = client.models.generate_content(
+                model=model,
+                contents=json.dumps(model_input, ensure_ascii=False),
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    # teaching comment: forcing JSON output makes downstream parsing reliable
+                    response_mime_type="application/json",
+                ),
+            )
+
+            # Response should already be JSON, but we parse to enforce correctness.
+            try:
+                payload = json.loads(response.text or "{}")
+            except json.JSONDecodeError:
+                payload = {
+                    "club_id": club_id,
+                    "window": window,
+                    "food": {"has_food": False, "details": ""},
+                    "summary": (response.text or "").strip(),
+                    "source_posts": [
+                        {"post_id": p.get("post_id"), "link": p.get("link")} for p in chunk
+                    ],
+                    "error": "model_returned_non_json",
+                }
+
+            # Ensure required fields exist even if the model omits them.
+            payload.setdefault("club_id", club_id)
+            payload.setdefault("window", window)
+            payload.setdefault(
+                "source_posts",
+                [{"post_id": p.get("post_id"), "link": p.get("link")} for p in chunk],
+            )
+
+            out_dir = data_paths.ensure_dir(paths.summary_dir(club_id=club_id, date_yyyy_mm_dd=run_date))
+            out_path = out_dir / f"summary_{idx:03d}.json"
+
+            with open(out_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+
+            results.append(
+                SummaryRecord(
+                    club_id=club_id,
+                    run_date=run_date,
+                    window=window,
+                    payload=payload,
+                    output_path=out_path,
+                )
+            )
+
+    return results
+
