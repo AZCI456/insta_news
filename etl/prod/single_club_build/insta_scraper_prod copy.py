@@ -10,10 +10,10 @@ import json
 #from python files
 import sqlite3
 
-load_dotenv()
 
-DB_PATH = os.getenv("insta_news_db_path")
-
+# TODO: make this a variable in the env file
+# Don't make it max posts make it last week (now 9 days) for the initial run  
+MAX_POSTS_PER_SESSION = 10
 
 
 def load_config():
@@ -49,15 +49,15 @@ def load_session(loader: instaloader.Instaloader, username: str, session_path: s
 def scrape_profile(
     loader: instaloader.Instaloader,
     target_username: str,
+    max_posts: int,
     last_checked_date: datetime,
-   # output_path: str, # TODO: make this a variable in the env file
-    batch_list: list,
+    output_path: str,
     con: sqlite3.Connection  # all passed in through reference so stays alive
 ):
     print(f"--- Attempting to scrape {target_username} ---")
 
     profile = instaloader.Profile.from_username(loader.context, target_username)
-    posts =  profile.get_posts() # islice(profile.get_posts(), max_posts)
+    posts = islice(profile.get_posts(), max_posts)
 
     with open(output_path, "a") as f:
         f.write("\n\n\n")
@@ -65,21 +65,19 @@ def scrape_profile(
 
     for post in posts:
         date_t = post.date
-        # see if this is a stale pinned post
         if post.is_pinned and date_t <= last_checked_date:
             continue
-        # once we've passed our date stop the scrape
         if date_t <= last_checked_date:
             break
 
         # caption_summary = get_event_summary(post.caption)
-        caption = post.caption
+        caption_summary = "NO SUMMARY YET @ SUMMARISER"
 
         data = {
             "date_local": post.date_local.isoformat(),
             "time_metadata_utc": post.date.isoformat(),
             "likes": post.likes,
-            "caption": caption,
+            "caption": caption_summary,
             "link": f"https://www.instagram.com/p/{post.shortcode}/",
         }
 
@@ -87,14 +85,8 @@ def scrape_profile(
             json.dump(data, f)
             f.write("\n")
 
-        batch_list.append(data)
-
         print(f"Processed Post on {post.date_local}")
         time.sleep(random.randint(4, 8))
-
-    # update the last_scraped_at date
-    con.execute("UPDATE clubs SET last_scraped_at = ? WHERE username = ?", (datetime.now().isoformat(), target_username))
-    con.commit()
 
 
 def main():
@@ -102,34 +94,22 @@ def main():
     loader = create_loader()
     load_session(loader, username, session_path)
 
-    con = sqlite3.connect(DB_PATH)
+    target_username = "umsuactivities"
+    last_checked_date = datetime.fromisoformat("2026-01-29")
+    output_path = "output.jsonl"
 
-    # get all the clubs that have been approved for scraping 
-    targets = con.execute("SELECT username, last_scraped_at FROM clubs WHERE last_scraped_at IS NOT NULL").fetchall()
 
-    #print(f"Targets: {targets}");
-    #exit()
-    
-    batch_process_list = []
-    BATCH_PROCESS_THREASHHOLD = 50
+    con = sqlite3.connect("/opt/insta_news_data/sqlite3/insta_news.sqlite3")
 
     try:
-        for target in targets:
-            if len(batch_process_list) >= BATCH_PROCESS_THREASHHOLD:
-                gemini_summariser(batch_process_list)
-
-            target_username = target[0]
-            last_checked_date = target[1]
-            scrape_profile(
-                loader=loader,
-                target_username=target[0],
-                last_checked_date=target[1],
-                batch_list = batch_process_list,
-                con=con
-            )
-        
-        if (len(batch_process_list)): gemini_summariser(batch_process_list)
-
+        scrape_profile(
+            loader=loader,
+            target_username=target_username,
+            max_posts=MAX_POSTS_PER_SESSION,
+            last_checked_date=last_checked_date,
+            output_path=output_path,
+            con=con
+        )
     except instaloader.ConnectionException as e:
         print(f"\n[!] Connection Error: {e}")
         print("Instagram likely detected the script. This is where Proxies would kick in.")
