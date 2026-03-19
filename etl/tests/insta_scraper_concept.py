@@ -40,6 +40,7 @@ try:
     last_checked_date = datetime.fromisoformat('2026-01-29')
     
     for post in posts:
+        if post.is_pinned: print(f"Pinned post: {post.date_local}")
         date_t = post.date
         if (post.is_pinned and date_t <= last_checked_date): continue;
         if (date_t <= last_checked_date): break

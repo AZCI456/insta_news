@@ -1,7 +1,7 @@
 import instaloader
 import time
 from itertools import islice
-from datetime import datetime
+from datetime import datetime, timezone  
 import random
 import os
 from dotenv import load_dotenv
@@ -69,14 +69,19 @@ def scrape_profile(
     # keeps each run grouped together on disk.
     run_date_yyyy_mm_dd = datetime.now().date().isoformat()
 
-    for post in posts:
-        date_t = post.date
+    # currently only one caption per multislide post so this works perfectly
+    # NOTE: pinned posts no longer supported by the API - broken by insta upsterasm changes
+    for i,post in enumerate(posts):
+
+        date_t = post.date_utc.replace(tzinfo=timezone.utc)
         # see if this is a stale pinned post
-        if post.is_pinned and date_t <= last_checked_date:
-            continue
-        # once we've passed our date stop the scrape
+        # insta allows only 3 pinned posts per profile
+        # assume first 3 pinned - wont actually ingest if old anyway
         if date_t <= last_checked_date:
-            break
+            if i < 4:
+                continue
+            else:
+                break
 
         # caption_summary = get_event_summary(post.caption)
         caption = post.caption
@@ -137,8 +142,9 @@ def main():
 
             club_id = target[0]
             target_username = target[1]
-            # teaching comment: SQLite stores datetimes as TEXT; convert ISO string -> datetime for comparisons.
-            last_checked_date = datetime.fromisoformat(target[2])
+
+            # load last_scraped_at as a timezone aware datetime so we can compare to post.date_utc with tzinfo stripped
+            last_checked_date = datetime.fromisoformat(target[2]).replace(tzinfo=timezone.utc)
             scrape_profile(
                 loader=loader,
                 club_id=club_id,

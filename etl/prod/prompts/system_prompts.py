@@ -31,6 +31,7 @@ OUTPUT STRUCTURE:
 2. MAIN EVENT: Identify the single most significant activity.
 3. SUMMARY: A 2-3 sentence factual briefing of all unique activities.
 4. ACTION LINKS: A list of direct URLs with clear labels.
+5. Only give for events that haven't yet occured in utc time (otherwise output of no news - can give a brief summary of past events)
 
 Return ONLY a valid JSON object in this schema:
 
