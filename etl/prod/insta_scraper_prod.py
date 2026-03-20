@@ -99,6 +99,7 @@ def scrape_profile(
             "likes": post.likes,
             "caption": caption,
             "link": f"https://www.instagram.com/p/{post.shortcode}/",
+            "date_scraped": datetime.now().isoformat() # so gemini has context if the event has passed or not
         }
 
         # append a single JSON object per line (JSONL)
