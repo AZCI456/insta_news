@@ -1,8 +1,10 @@
 # 🔮 UniMelb Club Oracle (Working Title)
 
-> **The definitive guide to free food and club events at the University of Melbourne.**
+> **A small student project to make club events easier to track.**
 
-Stop digging through buried Instagram stories and abandoned Discord servers. **Club Oracle** is a student-built project designed to aggregate campus life into a single, high-signal feed. No AI slop, no password fatigue—just the info you need to find the pizza and the people.
+I'm building this because a lot of information regarding events is mostly on instagram - which has a bad wrap for mental health and drawing a lot of time. Also saves the search of going through all your clubs to find info sending it straight to your inbox.
+
+I recommend combining with "rebase app" for insta messaging so you don't have to use instagram if you don't want to (while retaining all the benefits).
 
 ---
 
@@ -28,11 +30,11 @@ Stop digging through buried Instagram stories and abandoned Discord servers. **C
 
 ---
 
-## 🍕 1. Today’s Food Events
+## 🍕 1. Today's Food Events
 
-*Updated daily at 8:00 AM via SQL refresh.*
+*Updated daily at 8:00 AM*
 
-This table pulls directly from our `food_events` database to ensure you never miss a lunch.
+This table pulls from the `food_events` database which is extracted and classified by gemini when parsing through the raw post data.
 
 
 | Time             | Club / Host                                            | Food                         | Location             |
@@ -45,7 +47,10 @@ This table pulls directly from our `food_events` database to ensure you never mi
 
 ## 🤖 2. The Digest Engine
 
-Our model processes messy club announcements and outputs clean, structured data. This allows us to send you "Magic Link" emails that only contain the clubs you actually care about.
+Most of this is in etl/ - The model takes messy club posts and turns them into structured data.  
+That data powers the email digest so people only get updates for clubs they picked.
+
+Below is a sample made on a GEMINI-Flash-2.5-lite I configured (using a scratchpad feature so that it effectively thinks before it's json response - without having to pay for a thinking model)
 
 **Example Model Output (JSON):**
 
@@ -75,31 +80,38 @@ Our model processes messy club announcements and outputs clean, structured data.
 
 ## 🛠️ Tech Stack & Security
 
-This project is built to be "Professor-Approved" in terms of security. No corners cut.
+Tools used so Far - it's been the biggest blast learning about these.
+
+Note all the html and css was ai generated - I don't understand front end as much as back end and I believed there are enough websites online to accurately generate a simple html page. Worked well, combed through it no glaring errors I could find. Have learnt a lot and can write a bit - will dedicate more time to development of front end when I launch.
 
 - **Backend:** FastAPI
 - **Styling:** Tailwind CSS (Slate-950 Palette)
 - **Intelligence:** Gemini-powered ETL (Extract, Transform, Load)
-- **Privacy:** Emails are stored **hashed + encrypted** (SHA256 & Fernet). No plain-text student data ever touches the disk.
-- **Security:** Fuzzing for malicious input and Cloudflare integration pending.
+- **Privacy:** Emails are stored **hashed + encrypted** (SHA256 + Fernet). No plain-text student data on disk. 
+- **SMTP Config** Using resend free tier (will upgrade to Amazon SES using AWS account)
+- **Security:** Input fuzzing and Cloudflare are still on my to-do list.
+- **Instagram API interaction:** Instaloader API Python
+- **UMSU Website Information:** Used beautiful soup 4 (bs4) to extract all information from their online website to build the foreground of the db backend
 
 ---
 
-## 🚧 The Roadmap (Planned Launch: April/May 2026)
+## 🚧 Roadmap (WIP)
 
-I’m working on this daily to ensure it’s ready for the mid-sem/exam grind.
+Still building this bit by bit when I have time. I planned a march launch but in the hopes of moderating the product and understanding the code so it doesn't become just another student ai slop project has required a lot of time.
 
-- **Final Branding:** Deciding between *UniChap*, *MeetPoint*, *UniFeed*, or *ClubPoint*.
-- **Automated Pipeline:** Fully wiring the 8 AM table updates.
-- **Email ETL:** Polishing the final delivery engine.
-- **Reference Memory:** Integrating Gemini reference memory into responses.
-- **Audit:** Final security sign-off from UniMelb faculty.
-- **Hosting:** Get domain name and host properly.
+- **Name:** Pick a final name.
+- **Pipeline:** Make 8 AM updates fully reliable.
+- **Email ETL:** Polish the digest delivery flow.
+- **Audit:** Do one final security pass.
+- **Hosting:** Get a domain and deploy properly.
+- **Gemini Reference Memory:** Keep improving extraction quality.
+- **Launchd for Email:** send out emails every 3 days.
+- **Res Proxy Config:** Move to using static res proxy.
 
 ---
 
 ## 🔒 A Note on Privacy
 
-Built by a student, for students. We don’t want your passwords, and we don’t want your data. We just want you to get fed. 
+Built by a student, for students. I don't want your passwords, and I don't want your data. I just want this to be useful and to see more people outgoing at random events - a more social unimelb benefits everyone bar none.
 
 **Built with ❤️ at UniMelb.**

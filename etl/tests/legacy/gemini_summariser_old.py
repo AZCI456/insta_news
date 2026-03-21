@@ -5,7 +5,7 @@ import dotenv
 dotenv.load_dotenv()
 
 # 1. Setup API Key - replace before release
-# rotate api_key="AIzaSyAZLHjsrkni5qRwG1bTckRVSNDHmnDx7s8" before release
+# api_key="s8b...12s8" has been deleted and replaced with the new env value 
 client = genai.Client(api_key=dotenv.get_key("genai_api_key"))
 
 # 2. Configure the "System Instruction"
