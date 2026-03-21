@@ -1,0 +1,65 @@
+<!-- SECTION 3: Example model response (manual demo placeholder) -->
+      <section class="mb-6">
+        <div class="mb-3 text-left">
+          <h2 class="text-sm sm:text-base font-semibold text-emerald-300">
+            3. Example digest response
+          </h2>
+          <p class="mt-1 text-[11px] sm:text-xs text-slate-400">
+            This is real demo output from the model running locally on my machine.
+            It is currently in JSON format and will be properly stylised in the email response.
+            If you would like to see more of these I can on demand generate for any club 
+          </p>
+        </div>
+
+        <div class="retro-card rounded-2xl p-4 sm:p-5">
+          <!-- Teaching note: this is a plain readonly display area for demo content. -->
+          <pre
+            class="w-full min-h-[180px] whitespace-pre-wrap rounded-md border border-slate-700 bg-slate-950 p-3 text-[11px] sm:text-xs text-slate-200 overflow-auto"
+          >{
+  "club_id": "146",
+  "display_header": {
+    "name": "MUMS",
+    "food_tag": "🟢 FREE FOOD WEDNESDAY"
+  },
+  "main_event": "Competition Maths Catch-up",
+  <b>"summary_text"</b>:"MUMS has announced a Competition Maths Catch-up on Wednesday, March 18th at 5:30 PM in Room 215, Peter Hall, which will include free pizza. Following this, a Womxn in Maths Coffee Catch-up is scheduled for Thursday, March 19th, from 1:30 PM to 2:30 PM at Castro's Kiosk, offering free coffee and card games.",
+  "links": [
+    {
+      "label": "Register: Competition Maths Catch-up",
+      "url": "https://www.instagram.com/p/DV3HCcYk0Tc/"
+    },
+    {
+      "label": "Register: Womxn in Maths Coffee Catch-up",
+      "url": "https://www.instagram.com/p/DV3HCcYk0Tc/"
+    }
+  ]
+}</pre>
+        </div>
+      </section>
+
+      <!-- SECTION 4: Known demo gaps -->
+      <section class="mb-4">
+        <div class="mb-3 text-left">
+          <h2 class="text-sm sm:text-base font-semibold text-emerald-300">
+            4. Still to implement
+          </h2>
+          <p class="mt-1 text-[11px] sm:text-xs text-slate-400">
+            I tried to have this readyby march end but to insure it's quality controlled and not some ai slop 2 day project it's taking a bit of time.
+            <br><br>I'm working on it daily - so far its going really well! I'm planning on unvieling it to the community by April/May when mid sems and exams start picking up - making it v well positioned for launch.
+          </p>
+        </div>
+
+        <div class="retro-card rounded-2xl p-4 sm:p-5">
+          <ul class="list-disc space-y-1 pl-5 text-[11px] sm:text-xs text-slate-300">
+            <li>Decide on a cooler name 😭 [Lmk what you think about 'UniChap', 'MeetPoint', 'UniFeed', 'ClubPoint'?]</li>
+            <li>Wire this homepage table update every morning at 8am with all the food events for today.</li>
+            <li>Finish the final email etl engine (last step).</li>
+            <li>Integrate gemini reference memory into response.</li>
+            <li>Have security Professor at uni approve my current crypographic protection for user data.</li>
+            <li>Get domain name and host properly.</li>
+            <li>Fuzz the code with malicious input and see if it breaks.</li>
+            <li>Set up cloudfare for security purposes.</li>
+
+          </ul>
+        </div>
+      </section>

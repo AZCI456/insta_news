@@ -40,56 +40,13 @@ from prompts.system_prompts import SYSTEM_PROMPTS
 from google import genai
 from google.genai import types
 
-# Teaching comment:
-# Instead of creating the formatted prompt as a top-level variable, it makes more sense (and it's safer)
-# to do the time injection INSIDE the summarisation function. This guarantees that every time a batch is processed,
-# the current Melbourne time is used, and the correct, fresh prompt is supplied to the LLM.
-# Below, we update the function that fetches the prompt ("_get_system_prompt") to always substitute the current
-# Melbourne time if the "concise_cot" variant is requested.
-
-
-def _get_system_prompt(name: str) -> str:
-    """
-    Resolve a system prompt by name from `prompts/system_prompts.py` and inject current Melbourne time
-    for the 'concise_cot' ("chain-of-thought") prompt.
-
-    Teaching note:
-    - This ensures time-sensitive logic is always correct at call time.
-    - All prompt variants work as before—only 'concise_cot' does time injection.
-
-    Returns:
-      - The fully formatted prompt text (with {current_time_str} injected if needed)
-    """
-    # Get the prompt, defaulting to "concise" if the name is unknown
-    prompt_template = SYSTEM_PROMPTS.get(name) or SYSTEM_PROMPTS["concise"]
-    prompt_template = prompt_template.strip()
-
-
-    # (debug print removed)
-
-    # Time-inject *only* for chain-of-thought prompt
-    if name == "concise_cot":
-        # Set the timezone for Melbourne, Australia
-        melb_tz = ZoneInfo('Australia/Melbourne')
-        # Get fresh current time string on each use
-        current_time_str = datetime.now(melb_tz).strftime('%A, %B %d, %Y at %I:%M %p')
-        return prompt_template.replace("{current_time_str}", current_time_str)
-    else:
-        #throw error
-        raise ValueError(f"Invalid prompt name: {name}")
-        return prompt_template
-
-# And set the chain-of-thought prompt as the default for prod summarisation
-DEFAULT_PROMPT_NAME = os.getenv("GEMINI_SYSTEM_PROMPT", "concise_cot")
-
-
 
 # -----------------------------------------------------------------------------
 # 1) Configuration
 # -----------------------------------------------------------------------------
 
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
-#DEFAULT_PROMPT_NAME = os.getenv("GEMINI_SYSTEM_PROMPT", "concise")
+DEFAULT_PROMPT_NAME = os.getenv("GEMINI_SYSTEM_PROMPT", "concise_cot")
 
 def _get_system_prompt(name: str) -> str:
     """
@@ -99,7 +56,7 @@ def _get_system_prompt(name: str) -> str:
     - This lets you quickly try different prompt variants without touching the summariser logic.
     - If you typo the name, we fall back to "concise" instead of crashing mid-run.
     """
-    prompt_template = (SYSTEM_PROMPTS.get(name) or SYSTEM_PROMPTS["concise"]).strip()
+    prompt_template = (SYSTEM_PROMPTS.get(name) or SYSTEM_PROMPTS["concise-cot"]).strip()
 
     # If the template includes a placeholder, inject a fresh "now" string at call time.
     # This is how your `concise_cot` prompt gets the correct CURRENT_TIME value.
@@ -107,9 +64,10 @@ def _get_system_prompt(name: str) -> str:
         melb_tz = ZoneInfo("Australia/Melbourne")
         current_time_str = datetime.now(melb_tz).strftime("%A, %B %d, %Y at %I:%M %p")
         prompt_template = prompt_template.replace("{current_time_str}", current_time_str)
-
-    return prompt_template
-
+        return prompt_template
+    
+    # not currently considering non time injected prompts
+    raise ValueError(f"SYSTEM PROMPT NAME: {name} is not valid")
 
 def _get_client():
     """
@@ -135,15 +93,25 @@ def _chunks(items: List[Dict[str, Any]], size: int) -> Iterable[List[Dict[str, A
     - We chunk the *posts* list; the raw file layout stays per run/day.
     """
     for i in range(0, len(items), size):
+        # analagous to multiple return where the function state is paused at each yield
+        # so we can return multiple lists of size size
         yield items[i : i + size]
 
 
 def _infer_window(posts: List[Dict[str, Any]]) -> Dict[str, str]:
     """
     Infer a time window from the posts we are summarising.
+    Ie: if the posts are from 2026-03-20 10:00:00 to 2026-03-20 11:00:00, the window will be 2026-03-20 10:00:00 to 2026-03-20 11:00:00
 
+    We are ordering the posts by time_metadata_utc and then taking the first and last post to get the window
     We use the `time_metadata_utc` field if present; otherwise fall back to
     `date_local`.
+
+    Note this function has zero effect on the summarisation process
+        debugging ("what time range did this summary claim to cover?")
+        filtering / analytics ("which summaries are for events that are still upcoming?")
+        reprocessing/auditing (if you ever want to compare summaries across runs)
+
     """
     timestamps: List[str] = []
     for p in posts:
