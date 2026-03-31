@@ -40,12 +40,16 @@ from prompts.system_prompts import SYSTEM_PROMPTS
 from google import genai
 from google.genai import types
 
+# for the db insertion
+import sqlite3
+DB_PATH = os.getenv("insta_news_db_path")
+
 
 # -----------------------------------------------------------------------------
 # 1) Configuration
 # -----------------------------------------------------------------------------
-
-DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+# gemini-3.1-flash-lite-preview when the time comes
+DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite-preview")
 DEFAULT_PROMPT_NAME = os.getenv("GEMINI_SYSTEM_PROMPT", "concise_cot")
 
 def _get_system_prompt(name: str) -> str:
@@ -140,6 +144,11 @@ class SummaryRecord:
     payload: Dict[str, Any]
     output_path: Path
 
+def db_insert(json_object: Dict[str, Any]) -> None:
+    conn = sqlite3.connect(DB_PATH)
+
+    conn.execute("INSERT INTO summaries")
+
 
 def gemini_summariser(
     posts_batch: List[Dict[str, Any]],
@@ -174,7 +183,7 @@ def gemini_summariser(
     paths = data_paths.get_paths()
     system_prompt = _get_system_prompt(DEFAULT_PROMPT_NAME)
 
-    # teaching comment: group by club_id so each Gemini request only sees one club at a time.
+    # group by club_id so each Gemini request only sees one club at a time.
     by_club: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
     for post in posts_batch:
         club_id = post.get("club_id")
@@ -219,6 +228,7 @@ def gemini_summariser(
 
             # Response should already be JSON, but we parse to enforce correctness.
             try:
+                #NOTE: change the or seems like an oversite
                 payload = json.loads(response.text or "{}")
             except json.JSONDecodeError:
                 payload = {
@@ -231,6 +241,8 @@ def gemini_summariser(
                     ],
                     "error": "model_returned_non_json",
                 }
+
+            db_insert(payload)
 
             # Ensure required fields exist even if the model omits them.
             payload.setdefault("club_id", club_id)

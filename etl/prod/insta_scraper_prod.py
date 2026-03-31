@@ -102,7 +102,14 @@ def scrape_profile(
             "date_scraped": datetime.now().isoformat() # so gemini has context if the event has passed or not
         }
 
-        # append a single JSON object per line (JSONL)
+        # db insert
+        con.execute("INSERT INTO posts (club_id, caption, likes," \
+                    " time_metadata_utc, date_scraped, shortcode)"
+                    "VALUES (?,?,?,?,?,?)",
+                    (club_id, caption, post.likes, post.date.isoformat(),
+                      datetime.now().isoformat(), post.shortcode))
+
+        # jsonl for gemini as well as on droplet storage
         with open(raw_jsonl_path, "a") as f:
             json.dump(data, f)
             f.write("\n")
@@ -143,6 +150,7 @@ def main():
 
             club_id = target[0]
             target_username = target[1]
+            if (not target_username): continue
 
             # load last_scraped_at as a timezone aware datetime so we can compare to post.date_utc with tzinfo stripped
             last_checked_date = datetime.fromisoformat(target[2]).replace(tzinfo=timezone.utc)

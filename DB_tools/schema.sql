@@ -17,10 +17,13 @@ CREATE TABLE IF NOT EXISTS clubs (
 -- 2. Posts table
 -- No ON DELETE CASCADE so reimports/updates won't cascade deletions.
 CREATE TABLE IF NOT EXISTS posts (
-    post_id TEXT PRIMARY KEY,  -- globally unique on insta
+    post_id INTEGER PRIMARY KEY,  -- surrogate - fast insert / indexing - current auto assginement - needs to be explicit when moving to postgre
     club_id TEXT, -- from the loop of subscribed to clubs (join table with users)
     caption TEXT,
-    timestamp DATETIME,
+    likes INTEGER,
+    time_metadata_utc DATETIME,
+    date_scraped DATETIME,
+    shortcode TEXT UNIQUE, -- globally unique identifier on instagram
     -- GEM fields (uncomment when ready to use)
     -- food_summary JSON,
     -- process_status TEXT DEFAULT 'pending',
@@ -62,6 +65,23 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     -- NOTE: no ON DELETE CASCADE on purpose
 );
 
+CREATE TABLE IF NOT EXISTS ai_summaries (
+    summary_id INTEGER PRIMARY KEY,
+    club_id INTEGER  UNIQUE,
+    header TEXT, -- this is the title of the Excerpt
+    summary TEXT,
+    FOREIGN KEY (club_id) REFERENCES club(club_id)
+);
+
+-- Junction table for all the used posts in the summary
+CREATE TABLE IF NOT EXISTS summary_to_posts (
+    summary_id INTEGER,
+    post_id INTEGER, 
+    PRIMARY KEY (summary_id, post_id),
+    FOREIGN KEY (summary_id) REFERENCES ai_summaries(summary_id),
+    FOREGIN KEY (post_id) REFERENCES posts(post_id)
+) 
+
 -- 6. Keywords Table (all the different identifier keywords for the club)
 -- Keywords should be a stand-alone entity (table) because:
 -- 1. Many clubs can share the same keyword (e.g., "Technology", "Sports", etc.),
@@ -80,10 +100,11 @@ CREATE TABLE IF NOT EXISTS keywords (
 );
 
 -- Junction table to connect clubs and keywords in a many-to-many relationship:
+-- if you see the raw json this represents the links
 CREATE TABLE IF NOT EXISTS club_keywords (
     club_id INTEGER,
     keyword_id INTEGER,
-    PRIMARY KEY (club_id, keyword_id), -- each pair is unique
+    PRIMARY KEY (club_id, keyword_id), -- relation between the two tables
     FOREIGN KEY (club_id) REFERENCES clubs(club_id),
     FOREIGN KEY (keyword_id) REFERENCES keywords(keyword_id)
 );

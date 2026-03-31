@@ -4,7 +4,7 @@
 
 I'm building this because a lot of information regarding events is mostly on instagram - which has a bad wrap for mental health and drawing a lot of time. Also saves the search of going through all your clubs to find info sending it straight to your inbox.
 
-I recommend combining with "rebase app" for insta messaging so you don't have to use instagram if you don't want to (while retaining all the benefits).
+I recommend combining with "Beeper" app for insta messaging so you don't have to use instagram if you don't want to (while retaining all the benefits).
 
 ---
 

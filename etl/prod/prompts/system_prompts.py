@@ -109,7 +109,7 @@ Return ONLY valid JSON in this schema:
   ]
 }
 """,
-
+# NOTE: injects time into the script
 "concise_cot": """
 You are a factual data aggregator for university club activities. 
 
