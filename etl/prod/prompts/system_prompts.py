@@ -104,8 +104,8 @@ Return ONLY valid JSON in this schema:
     "main_event": "Name of the most prominent event"
   },
   "action_links": [
-    {"label": "Register: [Event Name]", "url": "string"},
-    {"label": "More Info: [Event Name]", "url": "string"}
+    {"label": "Register: [Event Name]", "url": "string", "Food": [Pizza/Yes but not specified/No Food]},
+    {"label": "More Info: [Event Name]", "url": "string", "Food": [Pizza/Yes but not specified/No Food]}
   ]
 }
 """,
@@ -144,7 +144,7 @@ You must return ONLY a valid JSON object. Do not include markdown formatting lik
   "main_event": "Name of primary UPCOMING event, or 'None'",
   "summary_text": "2-3 sentences of objective briefing for future events. If none, say 'No upcoming events scheduled.'",
   "links": [
-    {"label": "Register: [Event]", "url": "string"}
+    {"label": "Register: [Event]", "url": "string", "Food": [type: Pizza or not specified or null if nothing]}
   ]
 }
 """,

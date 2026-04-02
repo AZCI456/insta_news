@@ -62,6 +62,7 @@ def _get_system_prompt(name: str) -> str:
     """
     prompt_template = (SYSTEM_PROMPTS.get(name) or SYSTEM_PROMPTS["concise-cot"]).strip()
 
+    # Note: can also insert the club name so it doesn't hallucinate another name on output
     # If the template includes a placeholder, inject a fresh "now" string at call time.
     # This is how your `concise_cot` prompt gets the correct CURRENT_TIME value.
     if "{current_time_str}" in prompt_template:
@@ -144,10 +145,11 @@ class SummaryRecord:
     payload: Dict[str, Any]
     output_path: Path
 
-def db_insert(json_object: Dict[str, Any]) -> None:
+def db_insert(json_summary: Dict[str, Any]) -> None:
     conn = sqlite3.connect(DB_PATH)
 
-    conn.execute("INSERT INTO summaries")
+    conn.execute("INSERT INTO ai_summaries (club_id, header, content)" \
+                "VALUES (?, ?, ?)", json_summary[])
 
 
 def gemini_summariser(
@@ -216,6 +218,7 @@ def gemini_summariser(
                 ],
             }
 
+            # call to the llm
             response = client.models.generate_content(
                 model=model,
                 contents=json.dumps(model_input, ensure_ascii=False),
@@ -226,8 +229,8 @@ def gemini_summariser(
                 ),
             )
 
-            # Response should already be JSON, but we parse to enforce correctness.
-            try:
+            # json confirmation
+            try:    
                 #NOTE: change the or seems like an oversite
                 payload = json.loads(response.text or "{}")
             except json.JSONDecodeError:

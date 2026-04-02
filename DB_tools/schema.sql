@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS ai_summaries (
     summary_id INTEGER PRIMARY KEY,
     club_id INTEGER  UNIQUE,
     header TEXT, -- this is the title of the Excerpt
-    summary TEXT,
+    content TEXT,
     FOREIGN KEY (club_id) REFERENCES club(club_id)
 );
 
@@ -83,16 +83,6 @@ CREATE TABLE IF NOT EXISTS summary_to_posts (
 ) 
 
 -- 6. Keywords Table (all the different identifier keywords for the club)
--- Keywords should be a stand-alone entity (table) because:
--- 1. Many clubs can share the same keyword (e.g., "Technology", "Sports", etc.),
---    and each club can have multiple keywords (many-to-many relationship).
--- 2. With a dedicated 'keyword_id' as a surrogate (autoincrement integer) key,
---    we normalize the keywords, help with storage efficiency, and make keyword lookups/joining across clubs much easier.
---    Otherwise we'd be writing/duplicating strings over and over and struggle with changes, typos, and efficient searching.
---
--- 3. To represent club-keyword relationships, we use a linking/junction table
---    (club_keywords in this case), which ties club_id <-> keyword_id (both foreign keys).
-
 -- Master list of all possible keywords (unique/normalized):
 CREATE TABLE IF NOT EXISTS keywords (
     keyword_id INTEGER PRIMARY KEY AUTOINCREMENT,
