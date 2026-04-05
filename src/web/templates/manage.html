@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage your UniMelb clubs</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/theme.css" />
+  </head>
+
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <div class="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+      {% if request.query_params.get("saved") == "1" %}
+      <!-- Small confirmation banner after saving subscriptions -->
+      <div
+        class="mb-4 rounded-md border border-yellow-400/80 bg-yellow-500/10 px-3 py-2 text-[11px] sm:text-xs text-yellow-100 font-semibold shadow-md"
+      >
+        Your club preferences have been updated. You&rsquo;ll receive emails
+        based on this list from now on.
+      </div>
+      {% endif %}
+
+      <header class="mb-6 sm:mb-8">
+        <h1 class="text-xs font-semibold tracking-[0.25em] text-emerald-400/90 uppercase">
+          unimelb club oracle
+        </h1>
+        <p class="mt-2 text-xl sm:text-2xl font-semibold">
+          Manage your club subscriptions
+        </p>
+        <p class="mt-1 text-xs sm:text-sm text-slate-400">
+          This page is unlocked by your magic link. Tick the clubs you want to
+          hear from and save your preferences.
+        </p>
+      </header>
+
+      <section class="mb-6">
+        <div class="text-xs sm:text-sm text-slate-400">
+          <span class="font-semibold text-slate-200">Token:</span>
+          <code class="font-mono text-[10px] sm:text-xs text-slate-400 break-all">
+            {{ token }}
+          </code>
+        </div>
+      </section>
+
+      <section class="grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <!-- Left on desktop / second on mobile: searchable list of all clubs with checkboxes.
+             Teaching note: the order-2 md:order-1 classes mean "show this card after the
+             summary card on small screens, but place it in the left column on medium+
+             screens". This is a Tailwind CSS layout helper for responsive ordering. -->
+        <div
+          class="order-2 md:order-1 rounded-2xl border border-emerald-500/60 bg-slate-900/90 px-4 py-4 sm:px-5 sm:py-5"
+        >
+          <form
+            id="clubs-form"
+            method="post"
+            action="/manage?token={{ token }}"
+            class="space-y-4"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-sm font-semibold text-emerald-300">
+                Your clubs
+              </h2>
+              <input
+                id="club-search"
+                type="text"
+                placeholder="Search clubs..."
+                class="w-40 sm:w-52 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-[11px] text-slate-50 placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400/80"
+              />
+            </div>
+            <p class="text-[11px] text-slate-400">
+              Start typing to filter. Tick as many clubs as you like, and make sure to hit
+              SAVE so we don't lose your preferences (save even if deselecting). 
+              You can also use keywords to search e.g. 'engineering', 'social', 'tech' etc.<br><br>
+              NOTE: some shortforms are not yet supported ('MUMS', 'PSS') try a keyword for now we're working on it!
+            </p>
+
+            <div
+              id="clubs-list"
+              class="mt-2 max-h-[380px] space-y-1.5 overflow-auto pr-1"
+            >
+              {% for club in clubs %}
+              <label
+                class="flex items-start gap-2 rounded-lg border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-xs hover:border-emerald-400/80 hover:bg-slate-900/80 cursor-pointer"
+                data-name="{{ club['name'] | lower }}"
+                data-keywords="{{ club['keywords'] | default('') | lower }}"
+              >
+                <input
+                  type="checkbox"
+                  name="club_id"
+                  value="{{ club['club_id'] }}"
+                  class="mt-0.5 h-3.5 w-3.5 rounded border-slate-500 text-emerald-400 focus:ring-emerald-400"
+                  {% if club["club_id"] in selected_club_ids %}checked{% endif %}
+                />
+                <span>
+                  <span class="block font-medium text-[12px]">
+                    {{ club["name"] }}
+                  </span>
+                  <span class="mt-0.5 block text-[11px] text-slate-400">
+                    Club ID: {{ club["club_id"] }}
+                  </span>
+                </span>
+              </label>
+              {% endfor %}
+            </div>
+
+            <div class="pt-2">
+              <button
+                type="submit"
+                class="inline-flex items-center justify-center rounded-md border border-emerald-400 bg-emerald-500/90 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-950"
+              >
+                Save my club list
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Right on desktop / first on mobile: summary of currently selected clubs.
+             Teaching note: order-1 md:order-2 flips the visual stacking so this summary
+             appears at the top on phones (where vertical scrolling dominates) while still
+             living in the right-hand column on larger screens. -->
+        <div
+          class="order-1 md:order-2 rounded-2xl border border-slate-700/70 bg-slate-900/90 px-4 py-4 sm:px-5 sm:py-5"
+        >
+          <div class="flex items-center justify-between mb-2 gap-3">
+            <div>
+              <h2 class="text-sm font-semibold text-slate-100">
+                Currently selected
+              </h2>
+              <p class="text-[11px] text-slate-400">
+                Updates as you tick/untick clubs.
+              </p>
+            </div>
+            <button
+              type="button"
+              id="deselect-all"
+              class="rounded-md border border-slate-600 bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-100 hover:bg-slate-700"
+            >
+              Deselect all
+            </button>
+          </div>
+
+          <ul id="selected-clubs" class="space-y-1 text-xs text-slate-200"></ul>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      // Very small JS to:
+      // 1) Filter clubs by text
+      // 2) Keep the "Currently selected" list in sync
+
+      const searchInput = document.getElementById("club-search");
+      const clubsList = document.getElementById("clubs-list");
+      const selectedList = document.getElementById("selected-clubs");
+
+      function rebuildSelectedList() {
+        const checked = clubsList.querySelectorAll(
+          'input[name="club_id"]:checked'
+        );
+        selectedList.innerHTML = "";
+        checked.forEach((input) => {
+          const label = input.closest("label");
+          const nameEl = label.querySelector("span span");
+          const li = document.createElement("li");
+          li.textContent = nameEl ? nameEl.textContent.trim() : input.value;
+          selectedList.appendChild(li);
+        });
+        if (!checked.length) {
+          const li = document.createElement("li");
+          li.textContent = "No clubs selected yet.";
+          li.className = "text-[11px] text-slate-500";
+          selectedList.appendChild(li);
+        }
+      }
+
+      function filterClubs() {
+        const query = searchInput.value.trim().toLowerCase();
+        const labels = clubsList.querySelectorAll("label[data-name]");
+        labels.forEach((label) => {
+          const name = label.getAttribute("data-name") || "";
+          const keywords = label.getAttribute("data-keywords") || "";
+          const haystack = `${name} ${keywords}`;
+          const matches = haystack.includes(query);
+          label.style.display = matches ? "" : "none";
+        });
+      }
+
+      searchInput.addEventListener("input", filterClubs);
+      clubsList.addEventListener("change", rebuildSelectedList);
+
+      // Deselect-all button: clears all checkboxes and updates the summary list.
+      const deselectBtn = document.getElementById("deselect-all");
+      if (deselectBtn) {
+        deselectBtn.addEventListener("click", () => {
+          const checked = clubsList.querySelectorAll(
+            'input[name="club_id"]:checked'
+          );
+          checked.forEach((input) => {
+            input.checked = false;
+          });
+          rebuildSelectedList();
+        });
+      }
+
+      // Initial build on page load
+      rebuildSelectedList();
+    </script>
+  </body>
+</html>
+
