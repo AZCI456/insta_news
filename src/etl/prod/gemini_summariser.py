@@ -43,6 +43,9 @@ from google.genai import types
 # for the db insertion
 import sqlite3
 
+from src.etl.prod.db_insertion_tools.db_insert import db_insert_gemini_summaries
+
+
 DB_PATH = os.getenv("insta_news_db_path")
 
 # -----------------------------------------------------------------------------
@@ -256,7 +259,7 @@ def gemini_summariser(
                     "error": "model_returned_non_json",
                 }
 
-            db_insert(payload, club_id)
+            db_insert_gemini_summaries(payload, club_id)
 
             payload.setdefault("club_id", club_id)
             payload.setdefault("window", window)

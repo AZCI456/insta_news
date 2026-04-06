@@ -10,6 +10,8 @@ import sqlite3
 from src.etl.prod import data_paths
 from src.etl.prod.gemini_summariser import gemini_summariser
 
+from src.etl.prod.db_insertion_tools.db_insert import db_insert_posts
+
 load_dotenv()
 DB_PATH = os.getenv("insta_news_db_path")
 
@@ -19,6 +21,9 @@ def load_config():
     username = os.getenv("insta_username")
     if not username:
         raise RuntimeError("Environment variable 'insta_username' is not set.")
+    # this is different to the auto gened path when you run instaloader --load-cookies chrome
+    # which will be a .config on your home directory
+    # run cp -r ~/.config/instaloader/session-{username} /opt/insta_news_data/config/instaloader/session-{username}
     session_path = os.path.expanduser(f"/opt/insta_news_data/config/instaloader/session-{username}")
     return username, session_path
 
@@ -84,13 +89,10 @@ def scrape_profile(
             "caption": caption,
             "link": f"https://www.instagram.com/p/{post.shortcode}/",
             "date_scraped": datetime.now().isoformat(),  # so gemini has context if event has passed
+            "shortcode": post.shortcode,
         }
 
-        # db insert for raw post extraction path
-        con.execute(
-            "INSERT INTO posts (club_id, caption, likes, time_metadata_utc, date_scraped, shortcode) VALUES (?,?,?,?,?,?)",
-            (club_id, caption, post.likes, post.date.isoformat(), datetime.now().isoformat(), post.shortcode),
-        )
+        db_insert_posts(data)
 
         # jsonl for gemini as well as on droplet storage
         with open(raw_jsonl_path, "a", encoding="utf-8") as f:
@@ -117,10 +119,7 @@ def main():
 
     try:
         for target in targets:
-            if len(batch_process_list) >= batch_process_threshold:
-                gemini_summariser(batch_process_list, batch_size=batch_process_threshold)
-                batch_process_list.clear()  # teaching comment: prevent resending same items
-
+   
             club_id = target[0]
             target_username = target[1]
             if not target_username:

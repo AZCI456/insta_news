@@ -25,10 +25,6 @@ import hashlib
 from typing import List
 from datetime import datetime, timedelta, timezone
 
-# teaching comment:
-# Support both execution styles:
-# - package mode (tests / `python -m src.web.main`) -> `src.web...`
-# - local mode from `src/web` (`python main.py`) -> `email_system...`
 try:
     from src.web.email_system.email_utilites import (
         encrypt_email,
@@ -89,10 +85,7 @@ async def health() -> str:
 
 @app.get("/", response_class=HTMLResponse)
 async def show_home(request: Request) -> HTMLResponse:
-    # teaching note:
     # Starlette 1.x+ expects `TemplateResponse(request, template_name, context)`.
-    # The old `(name, {request: ...})` order passes a dict as the template *name*
-    # and triggers a 500 from Jinja2.
     return templates.TemplateResponse(request, "index.html", {})
 
 
@@ -192,7 +185,7 @@ async def update_manage(
             [(user_id, cid) for cid in selected_ids],
         )
 
-    nine_days_ago_iso = (datetime.now(timezone.utc) - timedelta(days=9)).isoformat(timespec="seconds")
+    two_weeks_ago_iso = (datetime.now(timezone.utc) - timedelta(weeks=2)).isoformat(timespec="seconds")
     cur.execute(
         """
         UPDATE clubs
@@ -202,7 +195,7 @@ async def update_manage(
               SELECT DISTINCT club_id FROM subscriptions
           );
         """,
-        (nine_days_ago_iso,),
+        (two_weeks_ago_iso,),
     )
 
     conn.commit()

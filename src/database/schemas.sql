@@ -31,17 +31,16 @@ CREATE TABLE IF NOT EXISTS posts (
 );
 
 -- 3. Food events table (dependent on posts)
--- TODO: add slide_id to the primary key (so we can have slides of captions per post - unlikely but possible)
--- NOTE: MAYBE NOT ACTUALLY - just loop through and concatenate the captions into one big string - then feed to gemini
+-- Note make events table for gemini memory of all clubs and then have a field active or not based on whether 
+-- the time of the event is in the past or future
 CREATE TABLE IF NOT EXISTS food_events (
     post_id TEXT PRIMARY KEY,  -- what to do if multiple posts link to the same food event?
     has_food BOOLEAN NOT NULL,
+    food_type TEXT,
     event_date DATE,
     start_time TIME,
     end_time TIME,
     location TEXT,
-    description TEXT,
-    confidence REAL,
     FOREIGN KEY (post_id) REFERENCES posts(post_id)
 );
 
@@ -67,7 +66,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 
 CREATE TABLE IF NOT EXISTS ai_summaries (
     summary_id INTEGER PRIMARY KEY,
-    club_id INTEGER  UNIQUE,
+    club_id INTEGER NOT NULL,
     header TEXT, -- this is the title of the Excerpt
     content TEXT,
     FOREIGN KEY (club_id) REFERENCES club(club_id)
@@ -85,7 +84,7 @@ CREATE TABLE IF NOT EXISTS summary_to_posts (
 -- 6. Keywords Table (all the different identifier keywords for the club)
 -- Master list of all possible keywords (unique/normalized):
 CREATE TABLE IF NOT EXISTS keywords (
-    keyword_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    keyword_id INTEGER PRIMARY KEY,
     keyword TEXT UNIQUE NOT NULL  -- no duplicate keywords
 );
 

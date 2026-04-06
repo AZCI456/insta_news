@@ -146,10 +146,11 @@ class SummaryRecord:
     output_path: Path
 
 def db_insert(json_summary: Dict[str, Any]) -> None:
-    conn = sqlite3.connect(DB_PATH)
+    pass
+    #conn = sqlite3.connect(DB_PATH)
 
-    conn.execute("INSERT INTO ai_summaries (club_id, header, content)" \
-                "VALUES (?, ?, ?)", json_summary[])
+    #conn.execute("INSERT INTO ai_summaries (club_id, header, content)" \
+    #            "VALUES (?, ?, ?)", json_summary[])
 
 
 def gemini_summariser(
