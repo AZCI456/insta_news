@@ -12,7 +12,30 @@ def load_schema(conn: sqlite3.Connection) -> None:
         schema_sql = f.read()
     conn.executescript(schema_sql)
 
+
+def remove_empty_tables(conn: sqlite3.Connection) -> None:
+    '''
+    Allows us to upsert new column names or
+    get rid of unused tables before importing the fresh 
+    schema
+    '''
+    table_lst = conn.execute("SELECT name FROM sqlite_master WHERE type='table';")
+
+    for (table_name,) in table_lst.fetchall():
+        # Check if the table has any rows
+        res = conn.execute(f"SELECT count(*) FROM {table_name};")
+        count = res.fetchone()[0]
+        if count:
+            continue  # Only drop empty tables
+
+        # Drop the empty table. No need for .fetchone() here.
+        conn.execute(f"DROP TABLE {table_name};")
+
+    
+
 if __name__ == "__main__":
     conn = sqlite3.Connection(DB_PATH)
+
+    remove_empty_tables(conn)
 
     load_schema(conn)
