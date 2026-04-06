@@ -1,6 +1,6 @@
-# 🔮 UniMelb Club Oracle (Working Title)
+# UniMelb Club Information Aggregator (Unica? or Unicia?)
 
-> **A small student project to make club events easier to track.**
+> **Designed to make club events easier to track.**
 
 I'm building this because a lot of information regarding events is mostly on instagram - which has a bad wrap for mental health and drawing a lot of time. Also saves the search of going through all your clubs to find info sending it straight to your inbox.
 
@@ -8,7 +8,7 @@ I recommend combining with "Beeper" app for insta messaging so you don't have to
 
 ---
 
-## 🖼️ Visual Preview
+## Website Preview
 
 <table>
   <tr>
@@ -30,7 +30,7 @@ I recommend combining with "Beeper" app for insta messaging so you don't have to
 
 ---
 
-## 🍕 1. Today's Food Events
+## 1. Food Events Table 
 
 *Updated daily at 8:00 AM*
 
@@ -45,7 +45,7 @@ This table pulls from the `food_events` database which is extracted and classifi
 
 ---
 
-## 🤖 2. The Digest Engine
+## 2. Data extraction + AI summarisation
 
 Most of this is in etl/ - The model takes messy club posts and turns them into structured data.  
 That data powers the email digest so people only get updates for clubs they picked.
@@ -78,7 +78,7 @@ Below is a sample made on a GEMINI-Flash-2.5-lite I configured (using a scratchp
 
 ---
 
-## 🛠️ Tech Stack & Security
+## Stack used
 
 Tools used so Far - it's been the biggest blast learning about these.
 
@@ -95,7 +95,7 @@ Note all the html and css was ai generated - I don't understand front end as muc
 
 ---
 
-## 🚧 Roadmap (WIP)
+## Still to do
 
 Still building this bit by bit when I have time. I planned a march launch but in the hopes of moderating the product and understanding the code so it doesn't become just another student ai slop project has required a lot of time.
 
@@ -110,8 +110,8 @@ Still building this bit by bit when I have time. I planned a march launch but in
 
 ---
 
-## 🔒 A Note on Privacy
+## Overall Vision
 
 Built by a student, for students. I don't want your passwords, and I don't want your data. I just want this to be useful and to see more people outgoing at random events - a more social unimelb benefits everyone bar none.
 
-**Built with ❤️ at UniMelb.**
+**Built with 🍕 at UniMelb.**

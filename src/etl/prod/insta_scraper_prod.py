@@ -52,17 +52,25 @@ def scrape_profile(
     print(f"--- Attempting to scrape {target_username} ---")
     profile = instaloader.Profile.from_username(loader.context, target_username)
     posts = profile.get_posts()
+    # teaching comment: this helper reads `insta_news_data_root` from `.env` and gives us
+    # consistent folders for raw JSONL + derived summaries (creating missing dirs safely).
     paths = data_paths.get_paths()
+    # keeps each run grouped together on disk.
     run_date_yyyy_mm_dd = datetime.now().date().isoformat()
 
     for i, post in enumerate(posts):
         date_t = post.date_utc.replace(tzinfo=timezone.utc)
+        # see if this is a stale pinned post
+        # insta allows only 3 pinned posts per profile
+        # assume first 3 pinned - wont actually ingest if old anyway
         if date_t <= last_checked_date:
             if i < 4:
                 continue
             break
 
+        # caption_summary = get_event_summary(post.caption)
         caption = post.caption
+        # raw JSONL path for this club and this run date
         raw_jsonl_path = paths.raw_posts_jsonl_path(club_id=club_id, date_yyyy_mm_dd=run_date_yyyy_mm_dd)
         data_paths.ensure_dir(raw_jsonl_path.parent)
 
@@ -75,14 +83,16 @@ def scrape_profile(
             "likes": post.likes,
             "caption": caption,
             "link": f"https://www.instagram.com/p/{post.shortcode}/",
-            "date_scraped": datetime.now().isoformat(),
+            "date_scraped": datetime.now().isoformat(),  # so gemini has context if event has passed
         }
 
+        # db insert for raw post extraction path
         con.execute(
             "INSERT INTO posts (club_id, caption, likes, time_metadata_utc, date_scraped, shortcode) VALUES (?,?,?,?,?,?)",
             (club_id, caption, post.likes, post.date.isoformat(), datetime.now().isoformat(), post.shortcode),
         )
 
+        # jsonl for gemini as well as on droplet storage
         with open(raw_jsonl_path, "a", encoding="utf-8") as f:
             json.dump(data, f)
             f.write("\n")
@@ -109,7 +119,7 @@ def main():
         for target in targets:
             if len(batch_process_list) >= batch_process_threshold:
                 gemini_summariser(batch_process_list, batch_size=batch_process_threshold)
-                batch_process_list.clear()
+                batch_process_list.clear()  # teaching comment: prevent resending same items
 
             club_id = target[0]
             target_username = target[1]

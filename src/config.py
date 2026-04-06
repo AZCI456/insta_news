@@ -13,7 +13,8 @@ BASE_DIR = _PROJECT_ROOT
 DATA_ROOT = Path(os.getenv("insta_news_data_root", BASE_DIR / "data")).expanduser()
 DB_PATH = Path(os.getenv("insta_news_db_path", DATA_ROOT / "insta_news.db"))
 
-Data_ROOT.mkdir(parents=True, exist_ok=True)
+
+DATA_ROOT.mkdir(parents=True, exist_ok=True)
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 INSTAGRAM_USERNAME = os.getenv("insta_username", "")

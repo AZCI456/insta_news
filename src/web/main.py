@@ -19,16 +19,28 @@ from fastapi.staticfiles import StaticFiles
 
 import os
 import sqlite3
+import smtplib
 from pathlib import Path
 import hashlib
 from typing import List
 from datetime import datetime, timedelta, timezone
 
-from email_system.email_utilites import (
-    encrypt_email,
-    generate_manage_token,
-    send_magic_link_email,
-)
+# teaching comment:
+# Support both execution styles:
+# - package mode (tests / `python -m src.web.main`) -> `src.web...`
+# - local mode from `src/web` (`python main.py`) -> `email_system...`
+try:
+    from src.web.email_system.email_utilites import (
+        encrypt_email,
+        generate_manage_token,
+        send_magic_link_email,
+    )
+except ModuleNotFoundError:  # pragma: no cover
+    from email_system.email_utilites import (
+        encrypt_email,
+        generate_manage_token,
+        send_magic_link_email,
+    )
 
 from dotenv import load_dotenv
 
@@ -100,8 +112,16 @@ async def signup(email: str = Form(...)) -> RedirectResponse:
     manage_token = conn.execute("SELECT manage_token FROM users WHERE email_hash = ?", (email_hash,)).fetchone()[0]
     conn.close()
 
-    send_magic_link_email(normalized_email, manage_token)
-    return RedirectResponse(url="/?sent=1", status_code=303)
+    # teaching comment:
+    # In Resend test mode, SMTP rejects non-authorized recipients with 550.
+    # We should not crash signup if email sending fails; user data is already
+    # safely stored, so we redirect with a flag the frontend can display.
+    try:
+        send_magic_link_email(normalized_email, manage_token)
+        return RedirectResponse(url="/?sent=1", status_code=303)
+    except smtplib.SMTPException as exc:
+        print(f"[WARN] Failed to send magic link email to {normalized_email}: {exc}")
+        return RedirectResponse(url="/?sent=0&email_error=1", status_code=303)
 
 
 @app.get("/manage", response_class=HTMLResponse)
