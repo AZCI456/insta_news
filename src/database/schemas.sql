@@ -78,8 +78,8 @@ CREATE TABLE IF NOT EXISTS summary_to_posts (
     post_id INTEGER, 
     PRIMARY KEY (summary_id, post_id),
     FOREIGN KEY (summary_id) REFERENCES ai_summaries(summary_id),
-    FOREGIN KEY (post_id) REFERENCES posts(post_id)
-) 
+    FOREIGN KEY (post_id) REFERENCES posts(post_id)
+);
 
 -- 6. Keywords Table (all the different identifier keywords for the club)
 -- Master list of all possible keywords (unique/normalized):

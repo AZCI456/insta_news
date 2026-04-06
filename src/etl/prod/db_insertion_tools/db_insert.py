@@ -6,6 +6,8 @@ import os
 load_dotenv()
 DB_PATH = os.getenv("insta_news_db_path")
 
+#TODO: switch dictionary calls to .get() so auto None if not present (maps to NULL in db)
+
 def db_insert_gemini_summaries(json_summary: Dict[str, Any]) -> None:
 
     conn = sqlite3.connect(DB_PATH)
