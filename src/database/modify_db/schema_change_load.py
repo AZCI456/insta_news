@@ -6,11 +6,13 @@ load_dotenv()
 DB_PATH = os.getenv("insta_news_db_path")
 
 def load_schema(conn: sqlite3.Connection) -> None:
+    cursor = conn.cursor()
+
     sql_directory = Path(__file__).resolve().parent.parent
     schema_path = sql_directory / "schemas.sql"
     with schema_path.open("r", encoding="utf-8") as f:
         schema_sql = f.read()
-    conn.executescript(schema_sql)
+    cursor.executescript(schema_sql)
 
 
 def remove_empty_tables(conn: sqlite3.Connection) -> None:
@@ -19,17 +21,20 @@ def remove_empty_tables(conn: sqlite3.Connection) -> None:
     get rid of unused tables before importing the fresh 
     schema
     '''
-    table_lst = conn.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    cursor = conn.cursor()
+
+    table_lst = cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 
     for (table_name,) in table_lst.fetchall():
         # Check if the table has any rows
-        res = conn.execute(f"SELECT count(*) FROM {table_name};")
+        res = cursor.execute(f"SELECT count(*) FROM {table_name};")
         count = res.fetchone()[0]
         if count:
             continue  # Only drop empty tables
 
-        # Drop the empty table. No need for .fetchone() here.
+        # Delete empty table - will be reinserted if necessary in the next function call
         conn.execute(f"DROP TABLE {table_name};")
+        conn.commit()
 
     
 

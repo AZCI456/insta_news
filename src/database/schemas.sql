@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS posts (
     likes INTEGER,
     time_metadata_utc DATETIME,
     date_scraped DATETIME,
+    -- TODO: multiple clubs can share a post - make junctoin table 😭
     shortcode TEXT UNIQUE, -- globally unique identifier on instagram
     -- GEM fields (uncomment when ready to use)
     -- food_summary JSON,
@@ -69,6 +70,7 @@ CREATE TABLE IF NOT EXISTS ai_summaries (
     club_id INTEGER NOT NULL,
     header TEXT, -- this is the title of the Excerpt
     content TEXT,
+    created_at DATETIME, -- UTC - starts of as unique as no concurrent executions - good for selecting from after generating
     FOREIGN KEY (club_id) REFERENCES club(club_id)
 );
 

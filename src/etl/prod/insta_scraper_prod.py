@@ -92,6 +92,8 @@ def scrape_profile(
             "shortcode": post.shortcode,
         }
 
+        # insert into db
+        # TODO: do at end so that if I term process don't have to manually delete
         db_insert_posts(data)
 
         # jsonl for gemini as well as on droplet storage
@@ -134,6 +136,12 @@ def main():
                 batch_list=batch_process_list,
                 con=con,
             )
+        
+            # for testing REMOVE
+            if len(batch_process_list):
+                gemini_summariser(batch_process_list, batch_size=batch_process_threshold)
+                batch_process_list.clear()
+
 
         if len(batch_process_list):
             gemini_summariser(batch_process_list, batch_size=batch_process_threshold)

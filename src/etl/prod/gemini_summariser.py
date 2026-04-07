@@ -52,6 +52,11 @@ DB_PATH = os.getenv("insta_news_db_path")
 # 1) Configuration
 # -----------------------------------------------------------------------------
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+MODEL_LIST = [
+    DEFAULT_MODEL,                # typically "gemini-2.5-flash-lite" or overridable by env
+    "gemini-2.5-flash",
+    "gemini-3.1-flash-lite-preview", 
+]
 DEFAULT_PROMPT_NAME = os.getenv("GEMINI_SYSTEM_PROMPT", "concise_cot")
 
 
@@ -234,15 +239,24 @@ def gemini_summariser(
                 ],
             }
 
-            response = client.models.generate_content(
-                model=model,
-                contents=json.dumps(model_input, ensure_ascii=False),
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    # teaching comment: forcing JSON output makes downstream parsing reliable
-                    response_mime_type="application/json",
-                ),
-            )
+            for candidate_model in MODEL_LIST:
+                try:
+                    response = client.models.generate_content(
+                        model=candidate_model, # original: model
+                        contents=json.dumps(model_input, ensure_ascii=False),
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_prompt,
+                            # teaching comment: forcing JSON output makes downstream parsing reliable
+                            response_mime_type="application/json",
+                        ),
+                    )
+                except Exception as e:
+                    print(f"[WARN] model {model} failed: {e}")
+                    continue
+
+            if not response:
+                print("[WARN] no response from any models")
+                return []
 
             # Response should already be JSON, but we parse to enforce correctness.
             try:
@@ -259,8 +273,7 @@ def gemini_summariser(
                     "error": "model_returned_non_json",
                 }
 
-            db_insert_gemini_summaries(payload, club_id)
-
+            # link the respective posts passed and the window span of information
             payload.setdefault("club_id", club_id)
             payload.setdefault("window", window)
             payload.setdefault(
@@ -268,11 +281,17 @@ def gemini_summariser(
                 [{"post_id": p.get("post_id"), "link": p.get("link")} for p in chunk],
             )
 
+            # disk backup in json should the db be compromised
             out_dir = data_paths.ensure_dir(paths.summary_dir(club_id=club_id, date_yyyy_mm_dd=run_date))
             out_path = out_dir / f"summary_{idx:03d}.json"
 
             with open(out_path, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
+
+            # insert the information into the db
+            db_insert_gemini_summaries(payload)
+            
+
 
             results.append(
                 SummaryRecord(
@@ -283,6 +302,6 @@ def gemini_summariser(
                     output_path=out_path,
                 )
             )
-
+    # return not necessary all data already passed 
     return results
 
