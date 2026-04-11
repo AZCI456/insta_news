@@ -239,20 +239,21 @@ def gemini_summariser(
                 ],
             }
 
-            for candidate_model in MODEL_LIST:
-                try:
-                    response = client.models.generate_content(
-                        model=candidate_model, # original: model
-                        contents=json.dumps(model_input, ensure_ascii=False),
-                        config=types.GenerateContentConfig(
-                            system_instruction=system_prompt,
-                            # teaching comment: forcing JSON output makes downstream parsing reliable
-                            response_mime_type="application/json",
-                        ),
-                    )
-                except Exception as e:
-                    print(f"[WARN] model {model} failed: {e}")
-                    continue
+            # for candidate_model in MODEL_LIST:
+            #    try:
+            print(f"Generating summary for {club_id} using model: {model}")
+            response = client.models.generate_content(
+                model=model, # original: model
+                contents=json.dumps(model_input, ensure_ascii=False),
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    # teaching comment: forcing JSON output makes downstream parsing reliable
+                    response_mime_type="application/json",
+                ),
+            )
+                # except Exception as e:
+                #     print(f"[WARN] model {model} failed: {e}")
+                #     continue
 
             if not response:
                 print("[WARN] no response from any models")

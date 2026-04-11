@@ -22,6 +22,8 @@ def db_insert_gemini_summaries(json_summary: Dict[str, Any]) -> None:
     if not DB_PATH:
         raise RuntimeError("insta_news_db_path is not set; cannot insert Gemini summaries.")
 
+    print(f"current json for {json_summary.get('display_header').get('name')}:\n {json_summary}")
+
     gen_time_utc = datetime.now(UTC).isoformat(timespec="seconds")
     conn = sqlite3.connect(DB_PATH)
 
@@ -31,8 +33,8 @@ def db_insert_gemini_summaries(json_summary: Dict[str, Any]) -> None:
             "INSERT INTO ai_summaries (club_id, header, content, created_at) VALUES (?, ?, ?, ?)",
             (
                 json_summary.get("club_id"),
-                json_summary.get("header"),
-                json_summary.get("content"),
+                json_summary.get("main_event"),
+                json_summary.get("summary_text"),
                 gen_time_utc,
             ),
         )
