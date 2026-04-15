@@ -44,7 +44,7 @@ from google.genai import types
 import sqlite3
 
 from src.etl.prod.db_insertion_tools.db_insert import db_insert_gemini_summaries
-
+from src.etl.prod.utilities import gemini_utilities
 
 DB_PATH = os.getenv("insta_news_db_path")
 
@@ -91,19 +91,6 @@ def _get_client():
     if not api_key:
         raise RuntimeError("Missing env var `genai_api_key` (Gemini API key).")
     return genai.Client(api_key=api_key)
-
-
-def _chunks(items: List[Dict[str, Any]], size: int) -> Iterable[List[Dict[str, Any]]]:
-    """
-    Yield successive chunks from a list.
-
-    Teaching note:
-    - Chunking lets us control request size (context + cost).
-    - We chunk the *posts* list; the raw file layout stays per run/day.
-    """
-    for i in range(0, len(items), size):
-        # analogous to multiple return where the function state is paused at each yield
-        yield items[i : i + size]
 
 
 @dataclass(frozen=True)
@@ -176,8 +163,8 @@ def db_insert(json_summary: Dict[str, Any], club_id: int) -> None:
 
 
 def gemini_summariser(
-    posts_batch: List[Dict[str, Any]],
-    *,
+    all_posts: List[Dict[str, Any]],
+    *, # following fields need to be specified by name
     batch_size: int = 50,
     model: str = DEFAULT_MODEL,
 ) -> List[SummaryRecord]:
@@ -196,113 +183,122 @@ def gemini_summariser(
 
     Behavior:
     - Groups posts by club_id (you want one summary per club, not a cross-club soup).
-    - For each club, chunks posts into <= batch_size and summarises each chunk.
+    - For each club_id group the posts
     - Writes each summary JSON to:
         derived/summaries/club_id=<ID>/date=<RUN_DATE>/summary_<N>.json
+        and inserts into db
     - Also upserts condensed summary into DB table `ai_summaries`.
     """
-    if not posts_batch:
+    if not all_posts:
         return []
 
     client = _get_client()
     paths = data_paths.get_paths()
     system_prompt = _get_system_prompt(DEFAULT_PROMPT_NAME)
 
-    by_club: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
-    for post in posts_batch:
-        club_id = post.get("club_id")
-        if club_id is None:
-            # If club_id is missing, we can't route it to the right folder.
-            # Skip rather than corrupting output.
-            continue
-        by_club[int(club_id)].append(post)
+    # split the posts by club
+    club_posts = gemini_utilities.group_by_club(all_posts)
 
+    # rundate is for insertion into the prompt - gemini doens't have real time 
+    #   access to date through the api
     run_date = datetime.now().date().isoformat()
-    results: List[SummaryRecord] = []
+ 
+    # refactored to only make one query to build a name lookup hash
+    # gemini halloucinates sometimes without the club name - so we give so there's no speculation 
+    conn = sqlite3.Connection(DB_PATH);
+    cursor = conn.cursor()
 
-    for club_id, club_posts in by_club.items():
+    # ------------ Extract to function -----------------
+
+    id_to_name: Dict[int, str] = dict()
+    club_information = cursor.execute("SELECT club_id, name FROM clubs")
+    # assert(club_infromation) - should be self explanatory 
+    for pair in club_information:
+        id_to_name[int(pair[0])] = pair[1]
+
+    # remember to clean up with closing connection at end; share connection with db
+    # insert to prevent continually opening connection (improves speed)
+
+    # ------------ Extract to function -----------------
+
+    # A note on chunking - good practice is for each 50 posts to chunk them 
+    # so the model doesn't lose detail (happens around 60k tolkens)
+    # however this needs to implemented with a summary merge - and I don't think any page
+    # posts that much in a week so deimplementing chunking
+    for club_id, club_posts in club_posts.items():        
+        
         # Keep newest->oldest stable ordering if your scraper appended in that order.
         # If ordering matters later, you can sort by time_metadata_utc here.
-        for idx, chunk in enumerate(_chunks(club_posts, batch_size), start=1):
-            window = infer_summary_time_window(chunk)
-            # Teaching note: we only send the fields the model needs.
-            model_input = {
+        window = infer_summary_time_window(club_posts)
+        
+        # Teaching note: we only send the fields the model needs.
+        model_input = {
+            "club_name": id_to_name.get(club_id),
+            "club_id": club_id,
+            "posts": [
+                {
+                    "post_id": p.get("post_id"),
+                    "timestamp": p.get("time_metadata_utc") or p.get("date_local"),
+                    "caption": p.get("caption") or "",
+                    "link": p.get("link"),
+                }
+                for p in club_posts
+            ],
+        }
+
+        # for candidate_model in MODEL_LIST:
+        #    try:
+        print(f"Generating summary for {club_id} using model: {model}")
+        response = client.models.generate_content(
+            model=model, # original: model
+            contents=json.dumps(model_input, ensure_ascii=False),
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                # teaching comment: forcing JSON output makes downstream parsing reliable
+                response_mime_type="application/json",
+            ),
+        )
+            # except Exception as e:
+            #     print(f"[WARN] model {model} failed: {e}")
+            #     continue
+
+        if not response:
+            print("[WARN] no response from any models")
+            return []
+
+        # Response should already be JSON, but we parse to enforce correctness.
+        try:
+            payload = json.loads(response.text or "{}")
+        except json.JSONDecodeError:
+            payload = {
                 "club_id": club_id,
-                "posts": [
-                    {
-                        "post_id": p.get("post_id"),
-                        "timestamp": p.get("time_metadata_utc") or p.get("date_local"),
-                        "caption": p.get("caption") or "",
-                        "link": p.get("link"),
-                    }
-                    for p in chunk
+                "window": window,
+                "food": {"has_food": False, "details": ""},
+                "summary": (response.text or "").strip(),
+                "source_posts": [
+                    {"post_id": p.get("post_id"), "link": p.get("link")} for p in club_posts
                 ],
+                "error": "model_returned_non_json",
             }
 
-            # for candidate_model in MODEL_LIST:
-            #    try:
-            print(f"Generating summary for {club_id} using model: {model}")
-            response = client.models.generate_content(
-                model=model, # original: model
-                contents=json.dumps(model_input, ensure_ascii=False),
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    # teaching comment: forcing JSON output makes downstream parsing reliable
-                    response_mime_type="application/json",
-                ),
-            )
-                # except Exception as e:
-                #     print(f"[WARN] model {model} failed: {e}")
-                #     continue
+        # link the respective posts passed and the window span of information
+        payload.setdefault("club_id", club_id)
+        payload.setdefault("window", window)
+        payload.setdefault(
+            "source_posts",
+            [{"post_id": p.get("post_id"), "link": p.get("link")} for p in club_posts],
+        )
 
-            if not response:
-                print("[WARN] no response from any models")
-                return []
+        # disk backup in json should the db be compromised
+        out_dir = data_paths.ensure_dir(paths.summary_dir(club_id=club_id, date_yyyy_mm_dd=run_date))
+        out_path = out_dir / f"summary_{run_date}.json"
 
-            # Response should already be JSON, but we parse to enforce correctness.
-            try:
-                payload = json.loads(response.text or "{}")
-            except json.JSONDecodeError:
-                payload = {
-                    "club_id": club_id,
-                    "window": window,
-                    "food": {"has_food": False, "details": ""},
-                    "summary": (response.text or "").strip(),
-                    "source_posts": [
-                        {"post_id": p.get("post_id"), "link": p.get("link")} for p in chunk
-                    ],
-                    "error": "model_returned_non_json",
-                }
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
 
-            # link the respective posts passed and the window span of information
-            payload.setdefault("club_id", club_id)
-            payload.setdefault("window", window)
-            payload.setdefault(
-                "source_posts",
-                [{"post_id": p.get("post_id"), "link": p.get("link")} for p in chunk],
-            )
-
-            # disk backup in json should the db be compromised
-            out_dir = data_paths.ensure_dir(paths.summary_dir(club_id=club_id, date_yyyy_mm_dd=run_date))
-            out_path = out_dir / f"summary_{idx:03d}.json"
-
-            with open(out_path, "w", encoding="utf-8") as f:
-                json.dump(payload, f, ensure_ascii=False, indent=2)
-
-            # insert the information into the db
-            db_insert_gemini_summaries(payload)
-            
+        # insert the information into the db
+        db_insert_gemini_summaries(payload)
+        
 
 
-            results.append(
-                SummaryRecord(
-                    club_id=club_id,
-                    run_date=run_date,
-                    window=window,
-                    payload=payload,
-                    output_path=out_path,
-                )
-            )
-    # return not necessary all data already passed 
-    return results
 

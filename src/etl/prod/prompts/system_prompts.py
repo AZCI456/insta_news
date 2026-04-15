@@ -114,7 +114,8 @@ Return ONLY valid JSON in this schema:
 You are a factual data aggregator for university club activities. 
 
 INPUT: 
-A list of Instagram captions, dates, and links for [Club Name].
+A list of Instagram captions, dates, and links for [CLUB_NAME].
+CLUB_NAME: {club_name}
 CURRENT_TIME: {current_time_str}
 
 GOAL:
