@@ -17,18 +17,31 @@ DB_PATH = os.getenv("insta_news_db_path")
 
 
 def load_config():
+    '''
+    currently dot env file contains a lot of specificly named data 
+
+    Note: link to your dummy account session on your browser 
+    run: instaloader --load-cookies chrome
+    run: cp -r ~/.config/instaloader/session-{username} /opt/insta_news_data/config/instaloader/session-{username}
+    
+
+    this abstracts away the clutter/complexity from the main class
+    '''
     load_dotenv()
     username = os.getenv("insta_username")
     if not username:
         raise RuntimeError("Environment variable 'insta_username' is not set.")
-    # this is different to the auto gened path when you run instaloader --load-cookies chrome
-    # which will be a .config on your home directory
-    # run cp -r ~/.config/instaloader/session-{username} /opt/insta_news_data/config/instaloader/session-{username}
+    
+    # based on the specific user you're using return session path
     session_path = os.path.expanduser(f"/opt/insta_news_data/config/instaloader/session-{username}")
     return username, session_path
 
 
 def create_loader():
+    '''
+    Creates the class straight outta the api docs 
+    - only need text forget heavy stuff
+    '''
     return instaloader.Instaloader(
         download_pictures=False,
         download_videos=False,
@@ -39,13 +52,22 @@ def create_loader():
 
 
 def load_session(loader: instaloader.Instaloader, username: str, session_path: str):
+    '''
+    links to instaloader in runtime using the env we set up before
+    '''
     try:
         loader.load_session_from_file(username, session_path)
         print("Authentication successful via session file.")
     except FileNotFoundError:
         print(f"Error: Session file not found at {session_path}")
 
+# makes passing it around easier
+class target_profile:
+    club_id: int
+    target_username: str
+    last_checked_date: datetime
 
+# TODO: remove excessive # of function parameters and replace with class above
 def scrape_profile(
     loader: instaloader.Instaloader,
     club_id: int,
@@ -54,6 +76,16 @@ def scrape_profile(
     batch_list: list,
     con: sqlite3.Connection,
 ):
+    """ Scrapes insta data for specific target 
+
+    Arguments:
+    loader - main class for the instaloader api utility
+    target_profile -- 
+    batch_list -- add the summaries to batch list to then send to gemini
+                    NOTE: maybe just replace with gemini call in function or something
+
+    
+    """
     print(f"--- Attempting to scrape {target_username} ---")
     profile = instaloader.Profile.from_username(loader.context, target_username)
     posts = profile.get_posts()
@@ -96,15 +128,21 @@ def scrape_profile(
         # TODO: do at end so that if I term process don't have to manually delete
         db_insert_posts(data)
 
-        # jsonl for gemini as well as on droplet storage
+        # add to hard storage as well on case of db failure/corruption at some point
         with open(raw_jsonl_path, "a", encoding="utf-8") as f:
             json.dump(data, f)
             f.write("\n")
 
+        # update batch list for later gemini summary processing
         batch_list.append(data)
-        print(f"Processed Post on {post.date_local}")
+
+        # for developer
+        print(f"Processed Post from {post.date_local} [AEST]")
+        
+        # sleep randomly to mimic human user
         time.sleep(random.randint(4, 8))
 
+    # once finished update the last scraped time to avoid unnecessary work
     con.execute("UPDATE clubs SET last_scraped_at = ? WHERE username = ?", (datetime.now().isoformat(), target_username))
     con.commit()
 
@@ -155,7 +193,7 @@ def main():
     except Exception as e:
         print(f"\n[!] Error: {e}")
 
-
+# run point for testing 
 if __name__ == "__main__":
     main()
 

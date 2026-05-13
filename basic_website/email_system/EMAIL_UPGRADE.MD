@@ -1,1 +1,0 @@
-when scaled enough upgrade to amazon ses more reliable and economical.

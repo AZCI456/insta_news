@@ -1,4 +1,0 @@
-instaloader
-python-dotenv
-google-genai
-pytz

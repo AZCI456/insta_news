@@ -106,7 +106,7 @@ async def signup(email: str = Form(...)) -> RedirectResponse:
     conn.close()
 
     # teaching comment:
-    # In Resend test mode, SMTP rejects non-authorized recipients with 550.
+    # In SES sandbox mode, SMTP rejects non-verified recipients with 554.
     # We should not crash signup if email sending fails; user data is already
     # safely stored, so we redirect with a flag the frontend can display.
     try:
