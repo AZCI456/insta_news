@@ -1,0 +1,5 @@
+# Replace with your real domain in .env as SITE_DOMAIN (e.g. cluboracle.example.com).
+# Caddy obtains and renews HTTPS certificates from Let's Encrypt automatically.
+{$SITE_DOMAIN} {
+	reverse_proxy server:8000
+}

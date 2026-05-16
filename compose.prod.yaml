@@ -1,0 +1,29 @@
+# Production overlay: HTTPS via Caddy + app not exposed on public port 8000.
+#
+# Usage on droplet (DNS A record → droplet IP must exist first):
+#   SITE_DOMAIN=yourdomain.com FRONTEND_URL=https://yourdomain.com docker compose -f compose.yaml -f compose.prod.yaml up -d --build
+#
+# Open firewall: sudo ufw allow 80/tcp && sudo ufw allow 443/tcp
+
+services:
+  server:
+    ports: !reset []
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN in .env e.g. example.com}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - server
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -42,5 +42,8 @@ addopts = "-q --tb=short"
 # teaching note:
 # Declares packages under the repo root so `pip install -e .` adds them to the
 # environment and imports like `import src.web.main` work from any cwd.
+# `include` limits discovery to the `src` tree so `tests/` and `DB_tools/` are not
+# shipped as importable top-level packages (cleaner wheels and Docker layers).
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["src*"]

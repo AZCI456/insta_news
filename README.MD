@@ -88,7 +88,7 @@ Note all the html and css was ai generated - I don't understand front end as muc
 - **Styling:** Tailwind CSS (Slate-950 Palette)
 - **Intelligence:** Gemini-powered ETL (Extract, Transform, Load)
 - **Privacy:** Emails are stored **hashed + encrypted** (SHA256 + Fernet). No plain-text student data on disk. 
-- **SMTP Config** Using resend free tier (will upgrade to Amazon SES using AWS account)
+- **Email** Magic links via Amazon SES API (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` in `.env`)
 - **Security:** Input fuzzing and Cloudflare are still on my to-do list.
 - **Instagram API interaction:** Instaloader API Python
 - **UMSU Website Information:** Used beautiful soup 4 (bs4) to extract all information from their online website to build the foreground of the db backend

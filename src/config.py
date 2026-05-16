@@ -10,7 +10,9 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(_PROJECT_ROOT / ".env")
 
 BASE_DIR = _PROJECT_ROOT
-DATA_ROOT = Path(os.getenv("insta_news_data_root", BASE_DIR / "data")).expanduser()
+# Default is off-repo so a fresh clone never writes subscriber data under the app tree.
+_DATA_ROOT_DEFAULT = "/opt/insta_news_data"
+DATA_ROOT = Path(os.getenv("insta_news_data_root", _DATA_ROOT_DEFAULT)).expanduser()
 DB_PATH = Path(os.getenv("insta_news_db_path", DATA_ROOT / "insta_news.db"))
 
 
